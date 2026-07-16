@@ -1,0 +1,42 @@
+package templates
+
+templ MobileHeader(activeTab string) {
+	<header class="md:hidden fixed top-0 left-0 right-0 z-50 px-3 pt-3">
+		<div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-glass border border-white/60 px-4 py-3">
+			<div class="flex items-center justify-between">
+				<a href="/" class="flex items-center gap-2">
+					<div class="w-7 h-7 rounded-lg bg-gradient-to-br from-navy-400 to-sage flex items-center justify-center text-white text-[11px] font-serif font-bold">B</div>
+					<span class="font-sans text-sm font-bold text-charcoal">My Blog</span>
+				</a>
+				<button
+					onclick="document.getElementById('mobile-nav').classList.toggle('hidden')"
+					class="text-charcoal-light p-1.5 rounded-xl hover:bg-gray-100/80 transition-colors"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"></path>
+					</svg>
+				</button>
+			</div>
+			<nav id="mobile-nav" class="hidden mt-3 flex flex-col gap-0.5 border-t border-gray-100/80 pt-3">
+				for _, item := range navItems {
+					<a
+						href={ templ.SafeURL(item.Href) }
+						hx-get={ item.Href }
+						hx-target="#content"
+						hx-swap="innerHTML show:window:top"
+						hx-push-url="true"
+						onclick="document.getElementById('mobile-nav').classList.add('hidden')"
+						if activeTab == item.TabID {
+							class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold text-sage bg-sage-50/80"
+						} else {
+							class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] text-charcoal-light hover:bg-gray-50/80 transition-colors"
+						}
+					>
+						@navIcon(item.Icon, activeTab == item.TabID)
+						{ item.Label }
+					</a>
+				}
+			</nav>
+		</div>
+	</header>
+}

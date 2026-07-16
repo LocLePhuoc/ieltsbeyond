@@ -1,0 +1,12 @@
+package repository
+
+import "github.com/loclp/personal-website/internal/model"
+
+// PostRepository defines the interface for accessing blog posts.
+// Implement this interface to swap between file-based and database-backed storage.
+type PostRepository interface {
+	GetAllPosts() ([]model.Post, error)
+	GetPostsByCategory(category model.Category) ([]model.Post, error)
+	GetPostBySlug(slug string) (*model.Post, error)
+	GetRecentPosts(limit int) ([]model.Post, error)
+}
