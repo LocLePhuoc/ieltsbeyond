@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/loclp/personal-website/internal/handler"
-	"github.com/loclp/personal-website/internal/repository"
+	"ieltsbeyond/internal/handler"
+	"ieltsbeyond/internal/repository"
 )
 
 func main() {

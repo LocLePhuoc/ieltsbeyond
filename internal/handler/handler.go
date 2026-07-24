@@ -7,9 +7,9 @@ import (
 
 	"github.com/a-h/templ"
 	"github.com/go-chi/chi/v5"
-	"github.com/loclp/personal-website/internal/model"
-	"github.com/loclp/personal-website/internal/repository"
-	"github.com/loclp/personal-website/templates"
+	"ieltsbeyond/internal/model"
+	"ieltsbeyond/internal/repository"
+	"ieltsbeyond/templates"
 )
 
 type Handler struct {

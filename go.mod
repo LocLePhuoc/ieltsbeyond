@@ -1,4 +1,4 @@
-module github.com/loclp/personal-website
+module ieltsbeyond
 
 go 1.25.0
 

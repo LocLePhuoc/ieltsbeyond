@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/loclp/personal-website/internal/markdown"
-	"github.com/loclp/personal-website/internal/model"
+	"ieltsbeyond/internal/markdown"
+	"ieltsbeyond/internal/model"
 )
 
 // FilePostRepository reads blog posts from markdown files in a content directory.

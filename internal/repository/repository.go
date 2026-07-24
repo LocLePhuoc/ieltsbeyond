@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/loclp/personal-website/internal/model"
+import "ieltsbeyond/internal/model"
 
 // PostRepository defines the interface for accessing blog posts.
 // Implement this interface to swap between file-based and database-backed storage.
