@@ -28,13 +28,18 @@ func IsValidCategory(s string) bool {
 }
 
 type Post struct {
-	Slug        string
-	Title       string
-	Summary     string
-	Category    Category
-	Tags        []string
-	Date        time.Time
-	CoverImage  string
-	Content     string // raw markdown
-	HTMLContent string // rendered HTML
+	Slug        string    `json:"slug"`
+	Title       string    `json:"title"`
+	Summary     string    `json:"summary"`
+	Category    Category  `json:"category"`
+	Tags        []string  `json:"tags"`
+	Date        time.Time `json:"date"`
+	CoverImage  string    `json:"coverImage"`
+	Content     string    `json:"-"`                      // raw markdown
+	HTMLContent string    `json:"htmlContent,omitempty"` // rendered HTML
+}
+
+type CategoryInfo struct {
+	Slug        Category `json:"slug"`
+	Description string   `json:"description"`
 }

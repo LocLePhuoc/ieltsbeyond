@@ -1,15 +1,15 @@
 package handler
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
+	"strconv"
 
-	"github.com/a-h/templ"
-	"github.com/go-chi/chi/v5"
 	"ieltsbeyond/internal/model"
 	"ieltsbeyond/internal/repository"
-	"ieltsbeyond/templates"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -20,82 +20,78 @@ func New(repo repository.PostRepository) *Handler {
 	return &Handler{repo: repo}
 }
 
-func isHTMX(r *http.Request) bool {
-	return r.Header.Get("HX-Request") == "true"
-}
-
-func (h *Handler) render(w http.ResponseWriter, r *http.Request, content templ.Component, title string, activeTab string) {
-	if isHTMX(r) {
-		// HTMX request: return content fragment + sidebar OOB update
-		if err := content.Render(r.Context(), w); err != nil {
-			log.Printf("Error rendering content: %v", err)
-		}
-		if err := templates.Footer().Render(r.Context(), w); err != nil {
-			log.Printf("Error rendering footer: %v", err)
-		}
-		if err := templates.SidebarOOB(activeTab).Render(r.Context(), w); err != nil {
-			log.Printf("Error rendering sidebar OOB: %v", err)
-		}
-	} else {
-		// Direct navigation: render full page
-		page := templates.Layout(title, activeTab, content)
-		if err := page.Render(r.Context(), w); err != nil {
-			log.Printf("Error rendering page: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		log.Printf("Error encoding JSON response: %v", err)
 	}
 }
 
-func (h *Handler) HandleHome(w http.ResponseWriter, r *http.Request) {
-	posts, err := h.repo.GetRecentPosts(6)
+func writeError(w http.ResponseWriter, status int, message string) {
+	writeJSON(w, status, map[string]string{"error": message})
+}
+
+// stripBody clears fields that list views don't need, keeping payloads small.
+func stripBody(posts []model.Post) []model.Post {
+	result := make([]model.Post, len(posts))
+	for i, p := range posts {
+		p.HTMLContent = ""
+		result[i] = p
+	}
+	return result
+}
+
+func (h *Handler) HandleCategories(w http.ResponseWriter, r *http.Request) {
+	infos := make([]model.CategoryInfo, len(model.AllCategories))
+	for i, c := range model.AllCategories {
+		infos[i] = model.CategoryInfo{Slug: c, Description: model.CategoryDescriptions[c]}
+	}
+	writeJSON(w, http.StatusOK, infos)
+}
+
+func (h *Handler) HandlePosts(w http.ResponseWriter, r *http.Request) {
+	categorySlug := r.URL.Query().Get("category")
+	limitParam := r.URL.Query().Get("limit")
+
+	var posts []model.Post
+	var err error
+
+	switch {
+	case limitParam != "":
+		limit, convErr := strconv.Atoi(limitParam)
+		if convErr != nil || limit < 0 {
+			writeError(w, http.StatusBadRequest, "invalid limit")
+			return
+		}
+		posts, err = h.repo.GetRecentPosts(limit)
+	case categorySlug != "":
+		if !model.IsValidCategory(categorySlug) {
+			writeError(w, http.StatusBadRequest, "invalid category")
+			return
+		}
+		posts, err = h.repo.GetPostsByCategory(model.Category(categorySlug))
+	default:
+		posts, err = h.repo.GetAllPosts()
+	}
+
 	if err != nil {
-		log.Printf("Error getting recent posts: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Error getting posts: %v", err)
+		writeError(w, http.StatusInternalServerError, "failed to load posts")
 		return
 	}
 
-	content := templates.Home(posts)
-	h.render(w, r, content, "My Blog", "home")
+	writeJSON(w, http.StatusOK, stripBody(posts))
 }
 
-func (h *Handler) HandleCategory(w http.ResponseWriter, r *http.Request) {
-	categorySlug := chi.URLParam(r, "category")
-
-	if !model.IsValidCategory(categorySlug) {
-		h.HandleNotFound(w, r)
-		return
-	}
-
-	category := model.Category(categorySlug)
-	posts, err := h.repo.GetPostsByCategory(category)
-	if err != nil {
-		log.Printf("Error getting posts for category %s: %v", categorySlug, err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	description := model.CategoryDescriptions[category]
-	content := templates.Category(category, description, posts)
-	title := strings.ToUpper(categorySlug[:1]) + categorySlug[1:] + " - My Blog"
-	h.render(w, r, content, title, categorySlug)
-}
-
-func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandlePostBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
 	post, err := h.repo.GetPostBySlug(slug)
 	if err != nil {
-		h.HandleNotFound(w, r)
+		writeError(w, http.StatusNotFound, "post not found")
 		return
 	}
 
-	content := templates.PostDetail(post)
-	title := post.Title + " - My Blog"
-	h.render(w, r, content, title, string(post.Category))
-}
-
-func (h *Handler) HandleNotFound(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
-	content := templates.NotFound()
-	h.render(w, r, content, "Not Found - My Blog", "")
+	writeJSON(w, http.StatusOK, post)
 }
