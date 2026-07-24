@@ -40,12 +40,4 @@ Thumbs.db
 
 # Build output
 bin/
-
-# Templ generated files
-*_templ.go
-
-# Tailwind standalone binary
-tailwindcss
-
-# Generated CSS
-static/css/output.css
+web/dist/
