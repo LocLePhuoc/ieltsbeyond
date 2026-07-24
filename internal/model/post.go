@@ -27,6 +27,8 @@ func IsValidCategory(s string) bool {
 	return false
 }
 
+
+
 type Post struct {
 	Slug        string    `json:"slug"`
 	Title       string    `json:"title"`
