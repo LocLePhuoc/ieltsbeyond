@@ -5,7 +5,7 @@ import Sidebar from "./Sidebar";
 import Footer from "./Footer";
 import { ActiveTabContext } from "./ActiveTabContext";
 
-const CATEGORY_TABS = ["tech", "gaming", "travelling"];
+const CATEGORY_TABS = ["tech", "gaming", "travelling", "writing"];
 
 function deriveTabFromPath(pathname: string): string {
   if (pathname === "/") return "home";

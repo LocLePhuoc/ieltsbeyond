@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { navItems } from "./navItems";
 import NavIcon from "./NavIcon";
 
@@ -11,6 +11,8 @@ export default function Sidebar({ activeTab }: { activeTab: string }) {
 }
 
 export function SidebarInner({ activeTab }: { activeTab: string }) {
+  const location = useLocation();
+
   return (
     <div className="flex flex-col h-full bg-white/80 backdrop-blur-xl rounded-[28px] shadow-glass px-5 py-6 border border-white/60 relative overflow-hidden">
       {/* Decorative gradient blobs */}
@@ -34,21 +36,42 @@ export function SidebarInner({ activeTab }: { activeTab: string }) {
         {navItems.map((item) => {
           const active = activeTab === item.tabId;
           return (
-            <Link
-              key={item.tabId}
-              to={item.href}
-              className={
-                active
-                  ? "sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold text-sage bg-sage-50/80 transition-all duration-200"
-                  : "sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-charcoal-light hover:text-charcoal hover:bg-gray-50/80 transition-all duration-200"
-              }
-            >
-              <NavIcon icon={item.icon} />
-              {item.label}
-              {active && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sage ring-2 ring-sage-200/60" />
+            <div key={item.tabId}>
+              <Link
+                to={item.href}
+                className={
+                  active
+                    ? "sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold text-sage bg-sage-50/80 transition-all duration-200"
+                    : "sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-charcoal-light hover:text-charcoal hover:bg-gray-50/80 transition-all duration-200"
+                }
+              >
+                <NavIcon icon={item.icon} />
+                {item.label}
+                {active && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sage ring-2 ring-sage-200/60" />
+                )}
+              </Link>
+              {item.children && (
+                <div className="flex flex-col gap-0.5 mt-0.5 ml-[15px] pl-4 border-l border-gray-200/70">
+                  {item.children.map((child) => {
+                    const childActive = location.pathname === child.href;
+                    return (
+                      <Link
+                        key={child.tabId}
+                        to={child.href}
+                        className={
+                          childActive
+                            ? "flex items-center px-3 py-2 rounded-xl text-[13px] font-semibold text-sage bg-sage-50/80 transition-all duration-200"
+                            : "flex items-center px-3 py-2 rounded-xl text-[13px] font-medium text-charcoal-light hover:text-charcoal hover:bg-gray-50/80 transition-all duration-200"
+                        }
+                      >
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
-            </Link>
+            </div>
           );
         })}
       </nav>
