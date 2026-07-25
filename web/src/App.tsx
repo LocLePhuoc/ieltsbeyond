@@ -4,10 +4,15 @@ import HomePage from "./pages/HomePage";
 import CategoryPage from "./pages/CategoryPage";
 import PostDetailPage from "./pages/PostDetailPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import AdminPostListPage from "./admin/AdminPostListPage";
+import AdminPostEditorPage from "./admin/AdminPostEditorPage";
 
 export default function App() {
   return (
     <Routes>
+      <Route path="admin/posts" element={<AdminPostListPage />} />
+      <Route path="admin/posts/new" element={<AdminPostEditorPage />} />
+      <Route path="admin/posts/:id/edit" element={<AdminPostEditorPage />} />
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="tech" element={<CategoryPage category="tech" />} />

@@ -5,6 +5,7 @@ import { capitalize, formatDate } from "../lib/cards";
 import { useActiveTab } from "../components/ActiveTabContext";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 import NotFoundPage from "./NotFoundPage";
+import TiptapRenderer from "../components/TiptapRenderer";
 
 export default function PostDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -62,7 +63,7 @@ export default function PostDetailPage() {
       </header>
 
       <div className="bg-white/70 backdrop-blur-sm rounded-3xl border border-white/60 shadow-glass p-6 md:p-10">
-        <div className="prose-blog" dangerouslySetInnerHTML={{ __html: post.htmlContent ?? "" }} />
+        <TiptapRenderer contentJSON={post.contentJSON} htmlContent={post.htmlContent} />
       </div>
 
       <div className="mt-8 flex">

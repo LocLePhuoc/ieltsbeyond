@@ -9,6 +9,7 @@ export interface Post {
   date: string;
   coverImage: string;
   htmlContent?: string;
+  contentJSON?: unknown;
 }
 
 export interface CategoryInfo {

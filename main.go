@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -8,19 +9,27 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"ieltsbeyond/internal/handler"
-	"ieltsbeyond/internal/repository"
+	"ieltsbeyond/internal/post"
 )
 
 const webDist = "web/dist"
 
 func main() {
-	repo, err := repository.NewFilePostRepository("content")
-	if err != nil {
-		log.Fatalf("Failed to load posts: %v", err)
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL is required. Copy .env.example, start Postgres, and run migrations/import.")
 	}
 
-	h := handler.New(repo)
+	ctx := context.Background()
+	db, err := post.Connect(ctx, databaseURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to Postgres: %v", err)
+	}
+	defer db.Close()
+
+	store := post.NewPostgresStore(db)
+	publicHandler := post.NewPublicHandler(store)
+	adminHandler := post.NewAdminHandler(store, os.Getenv("ADMIN_TOKEN"))
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -29,9 +38,10 @@ func main() {
 
 	// JSON API
 	r.Route("/api", func(r chi.Router) {
-		r.Get("/categories", h.HandleCategories)
-		r.Get("/posts", h.HandlePosts)
-		r.Get("/posts/{slug}", h.HandlePostBySlug)
+		r.Get("/categories", publicHandler.HandleCategories)
+		r.Get("/posts", publicHandler.HandlePosts)
+		r.Get("/posts/{slug}", publicHandler.HandlePostBySlug)
+		r.Route("/admin", adminHandler.Routes)
 	})
 
 	// Static content assets (cover images, etc.)
@@ -41,8 +51,12 @@ func main() {
 	// React SPA
 	r.Get("/*", spaHandler(webDist))
 
-	log.Println("Server starting on http://localhost:3000")
-	if err := http.ListenAndServe(":3000", r); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+	log.Printf("Server starting on http://localhost:%s", port)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
