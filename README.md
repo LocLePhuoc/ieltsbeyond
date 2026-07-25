@@ -62,7 +62,6 @@ Authorization: Bearer <ADMIN_TOKEN>
 Added:
 
 ```txt
-docker-compose.yml
 migrations/000001_create_posts.up.sql
 migrations/000001_create_posts.down.sql
 cmd/migrate/main.go
@@ -120,9 +119,7 @@ Public post display now renders saved Tiptap JSON using a read-only Tiptap rende
 
 - Go
 - Node.js + npm
-- Docker + Docker Compose for local Postgres
-
-> Note: Docker was not available in the coding environment, so database startup/import could not be fully run there. Go and frontend builds were validated.
+- A running Postgres 17 instance (local install, Docker container you manage yourself, or a cloud/managed database) reachable via `DATABASE_URL`
 
 ## Environment
 
@@ -132,13 +129,15 @@ Create a local `.env` file:
 cp .env.example .env
 ```
 
-Default local values:
+Default local values assume a Postgres instance already running on `localhost:5432` with a matching database/user/password:
 
 ```env
 DATABASE_URL=postgres://ieltsbeyond:ieltsbeyond@localhost:5432/ieltsbeyond?sslmode=disable
 ADMIN_TOKEN=local-dev-token
 PORT=3000
 ```
+
+Point `DATABASE_URL` at whatever Postgres 17 instance you're using; adjust the values to match its host, credentials, and database name.
 
 Use `local-dev-token` in the admin UI token box unless you change `ADMIN_TOKEN`.
 
@@ -150,13 +149,7 @@ Install frontend dependencies:
 make setup
 ```
 
-Start Postgres:
-
-```bash
-make db-up
-```
-
-Run migrations:
+Make sure the Postgres instance from `DATABASE_URL` is up and reachable, then run migrations:
 
 ```bash
 make migrate-up
@@ -232,14 +225,12 @@ Only published posts appear on the public blog.
 
 ```txt
 make setup             install frontend dependencies
-make db-up             start local Postgres
-make db-down           stop local Postgres
 make migrate-up        run database migrations
 make migrate-down      roll back one migration
 make import-markdown   import content/*.md posts into Postgres
 make dev-api           run Go backend on PORT, default 3000
 make dev-web           run Vite frontend dev server
-make dev               db-up + migrate-up + import-markdown + dev-api
+make dev               migrate-up + import-markdown + dev-api
 make web               build React frontend
 make build             build frontend and Go binary
 make run               run production build
