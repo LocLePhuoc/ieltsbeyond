@@ -2,12 +2,14 @@ package post
 
 import (
 	"errors"
+	"ieltsbeyond/internal/utils"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"ieltsbeyond/internal/model"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type PublicHandler struct {
@@ -23,7 +25,7 @@ func (h *PublicHandler) HandleCategories(w http.ResponseWriter, r *http.Request)
 	for i, c := range model.AllCategories {
 		infos[i] = model.CategoryInfo{Slug: c, Description: model.CategoryDescriptions[c]}
 	}
-	writeJSON(w, http.StatusOK, infos)
+	utils.WriteJSON(w, http.StatusOK, infos)
 }
 
 func (h *PublicHandler) HandlePosts(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +34,7 @@ func (h *PublicHandler) HandlePosts(w http.ResponseWriter, r *http.Request) {
 	if limitParam := r.URL.Query().Get("limit"); limitParam != "" {
 		parsed, err := strconv.Atoi(limitParam)
 		if err != nil || parsed < 0 {
-			writeError(w, http.StatusBadRequest, "invalid limit")
+			utils.WriteError(w, http.StatusBadRequest, "invalid limit")
 			return
 		}
 		limit = parsed
@@ -41,7 +43,7 @@ func (h *PublicHandler) HandlePosts(w http.ResponseWriter, r *http.Request) {
 	var category *model.Category
 	if categorySlug != "" {
 		if !model.IsValidCategory(categorySlug) {
-			writeError(w, http.StatusBadRequest, "invalid category")
+			utils.WriteError(w, http.StatusBadRequest, "invalid category")
 			return
 		}
 		c := model.Category(categorySlug)
@@ -51,27 +53,27 @@ func (h *PublicHandler) HandlePosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := h.store.ListPublished(r.Context(), category, limit)
 	if err != nil {
 		log.Printf("Error getting posts: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to load posts")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to load posts")
 		return
 	}
 
-	out := make([]PublicPost, len(posts))
+	out := make([]model.PublicPost, len(posts))
 	for i, p := range posts {
 		out[i] = p.Public(false)
 	}
-	writeJSON(w, http.StatusOK, out)
+	utils.WriteJSON(w, http.StatusOK, out)
 }
 
 func (h *PublicHandler) HandlePostBySlug(w http.ResponseWriter, r *http.Request) {
 	p, err := h.store.GetPublishedBySlug(r.Context(), chi.URLParam(r, "slug"))
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			writeError(w, http.StatusNotFound, "post not found")
+			utils.WriteError(w, http.StatusNotFound, "post not found")
 			return
 		}
 		log.Printf("Error getting post: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to load post")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to load post")
 		return
 	}
-	writeJSON(w, http.StatusOK, p.Public(true))
+	utils.WriteJSON(w, http.StatusOK, p.Public(true))
 }

@@ -34,7 +34,7 @@ func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func (s *PostgresStore) ListPublished(ctx context.Context, category *model.Category, limit int) ([]Post, error) {
+func (s *PostgresStore) ListPublished(ctx context.Context, category *model.Category, limit int) ([]model.Post, error) {
 	query := baseSelect() + " WHERE status = 'published'"
 	args := []any{}
 	if category != nil {
@@ -54,12 +54,12 @@ func (s *PostgresStore) ListPublished(ctx context.Context, category *model.Categ
 	return scanPosts(rows)
 }
 
-func (s *PostgresStore) GetPublishedBySlug(ctx context.Context, slug string) (*Post, error) {
+func (s *PostgresStore) GetPublishedBySlug(ctx context.Context, slug string) (*model.Post, error) {
 	row := s.db.QueryRow(ctx, baseSelect()+" WHERE slug = $1 AND status = 'published'", slug)
 	return scanPost(row)
 }
 
-func (s *PostgresStore) ListAdmin(ctx context.Context) ([]Post, error) {
+func (s *PostgresStore) ListAdmin(ctx context.Context) ([]model.Post, error) {
 	rows, err := s.db.Query(ctx, baseSelect()+" ORDER BY updated_at DESC")
 	if err != nil {
 		return nil, err
@@ -68,12 +68,12 @@ func (s *PostgresStore) ListAdmin(ctx context.Context) ([]Post, error) {
 	return scanPosts(rows)
 }
 
-func (s *PostgresStore) GetAdmin(ctx context.Context, id uuid.UUID) (*Post, error) {
+func (s *PostgresStore) GetAdmin(ctx context.Context, id uuid.UUID) (*model.Post, error) {
 	row := s.db.QueryRow(ctx, baseSelect()+" WHERE id = $1", id)
 	return scanPost(row)
 }
 
-func (s *PostgresStore) Create(ctx context.Context, input UpsertPostInput) (*Post, error) {
+func (s *PostgresStore) Create(ctx context.Context, input model.UpsertPostInput) (*model.Post, error) {
 	if err := ValidateInput(input); err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (s *PostgresStore) Create(ctx context.Context, input UpsertPostInput) (*Pos
 	return scanPost(row)
 }
 
-func (s *PostgresStore) Update(ctx context.Context, id uuid.UUID, input UpsertPostInput) (*Post, error) {
+func (s *PostgresStore) Update(ctx context.Context, id uuid.UUID, input model.UpsertPostInput) (*model.Post, error) {
 	if err := ValidateInput(input); err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (s *PostgresStore) Update(ctx context.Context, id uuid.UUID, input UpsertPo
 	return scanPost(row)
 }
 
-func (s *PostgresStore) Publish(ctx context.Context, id uuid.UUID) (*Post, error) {
+func (s *PostgresStore) Publish(ctx context.Context, id uuid.UUID) (*model.Post, error) {
 	row := s.db.QueryRow(ctx, `WITH updated AS (
 		UPDATE posts SET status = 'published', published_at = COALESCE(published_at, now()), updated_at = now()
 		WHERE id = $1 RETURNING id
@@ -117,7 +117,7 @@ func (s *PostgresStore) Publish(ctx context.Context, id uuid.UUID) (*Post, error
 	return scanPost(row)
 }
 
-func (s *PostgresStore) Unpublish(ctx context.Context, id uuid.UUID) (*Post, error) {
+func (s *PostgresStore) Unpublish(ctx context.Context, id uuid.UUID) (*model.Post, error) {
 	row := s.db.QueryRow(ctx, `WITH updated AS (
 		UPDATE posts SET status = 'draft', updated_at = now()
 		WHERE id = $1 RETURNING id
@@ -144,8 +144,8 @@ type rowScanner interface {
 	Scan(dest ...any) error
 }
 
-func scanPost(row rowScanner) (*Post, error) {
-	var p Post
+func scanPost(row rowScanner) (*model.Post, error) {
+	var p model.Post
 	var tagsBytes []byte
 	if err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Summary, &p.Category, &tagsBytes, &p.CoverImage, &p.Status, &p.ContentJSON, &p.ContentHTML, &p.CreatedAt, &p.UpdatedAt, &p.PublishedAt); err != nil {
 		return nil, mapPgError(err)
@@ -159,8 +159,8 @@ func scanPost(row rowScanner) (*Post, error) {
 	return &p, nil
 }
 
-func scanPosts(rows pgx.Rows) ([]Post, error) {
-	var posts []Post
+func scanPosts(rows pgx.Rows) ([]model.Post, error) {
+	var posts []model.Post
 	for rows.Next() {
 		p, err := scanPost(rows)
 		if err != nil {

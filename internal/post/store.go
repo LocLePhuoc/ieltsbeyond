@@ -17,18 +17,18 @@ var (
 )
 
 type Store interface {
-	ListPublished(ctx context.Context, category *model.Category, limit int) ([]Post, error)
-	GetPublishedBySlug(ctx context.Context, slug string) (*Post, error)
-	ListAdmin(ctx context.Context) ([]Post, error)
-	GetAdmin(ctx context.Context, id uuid.UUID) (*Post, error)
-	Create(ctx context.Context, input UpsertPostInput) (*Post, error)
-	Update(ctx context.Context, id uuid.UUID, input UpsertPostInput) (*Post, error)
-	Publish(ctx context.Context, id uuid.UUID) (*Post, error)
-	Unpublish(ctx context.Context, id uuid.UUID) (*Post, error)
+	ListPublished(ctx context.Context, category *model.Category, limit int) ([]model.Post, error)
+	GetPublishedBySlug(ctx context.Context, slug string) (*model.Post, error)
+	ListAdmin(ctx context.Context) ([]model.Post, error)
+	GetAdmin(ctx context.Context, id uuid.UUID) (*model.Post, error)
+	Create(ctx context.Context, input model.UpsertPostInput) (*model.Post, error)
+	Update(ctx context.Context, id uuid.UUID, input model.UpsertPostInput) (*model.Post, error)
+	Publish(ctx context.Context, id uuid.UUID) (*model.Post, error)
+	Unpublish(ctx context.Context, id uuid.UUID) (*model.Post, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
-func ValidateInput(input UpsertPostInput) error {
+func ValidateInput(input model.UpsertPostInput) error {
 	if strings.TrimSpace(input.Slug) == "" || strings.TrimSpace(input.Title) == "" || strings.TrimSpace(input.Summary) == "" || strings.TrimSpace(input.Category) == "" || len(input.ContentJSON) == 0 || strings.TrimSpace(input.ContentHTML) == "" {
 		return ErrInvalidInput
 	}

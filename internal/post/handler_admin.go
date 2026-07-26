@@ -3,6 +3,8 @@ package post
 import (
 	"encoding/json"
 	"errors"
+	"ieltsbeyond/internal/model"
+	"ieltsbeyond/internal/utils"
 	"log"
 	"net/http"
 	"strings"
@@ -23,12 +25,12 @@ func NewAdminHandler(store Store, adminToken string) *AdminHandler {
 func (h *AdminHandler) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if h.adminToken == "" {
-			writeError(w, http.StatusUnauthorized, "admin token is not configured")
+			utils.WriteError(w, http.StatusUnauthorized, "admin token is not configured")
 			return
 		}
 		got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if got == "" || got != h.adminToken {
-			writeError(w, http.StatusUnauthorized, "invalid admin token")
+			utils.WriteError(w, http.StatusUnauthorized, "invalid admin token")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -50,10 +52,10 @@ func (h *AdminHandler) ListPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := h.store.ListAdmin(r.Context())
 	if err != nil {
 		log.Printf("Error listing admin posts: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to load posts")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to load posts")
 		return
 	}
-	writeJSON(w, http.StatusOK, posts)
+	utils.WriteJSON(w, http.StatusOK, posts)
 }
 
 func (h *AdminHandler) GetPost(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +77,7 @@ func (h *AdminHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, p)
+	utils.WriteJSON(w, http.StatusCreated, p)
 }
 
 func (h *AdminHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
@@ -124,40 +126,40 @@ func (h *AdminHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 func parseID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid post id")
+		utils.WriteError(w, http.StatusBadRequest, "invalid post id")
 		return uuid.Nil, false
 	}
 	return id, true
 }
 
-func decodeInput(w http.ResponseWriter, r *http.Request) (UpsertPostInput, bool) {
+func decodeInput(w http.ResponseWriter, r *http.Request) (model.UpsertPostInput, bool) {
 	defer r.Body.Close()
-	var input UpsertPostInput
+	var input model.UpsertPostInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid JSON body")
 		return input, false
 	}
 	return input, true
 }
 
-func writePostOrError(w http.ResponseWriter, p *Post, err error) {
+func writePostOrError(w http.ResponseWriter, p *model.Post, err error) {
 	if err != nil {
 		writeStoreError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, p)
+	utils.WriteJSON(w, http.StatusOK, p)
 }
 
 func writeStoreError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, ErrNotFound):
-		writeError(w, http.StatusNotFound, "post not found")
+		utils.WriteError(w, http.StatusNotFound, "post not found")
 	case errors.Is(err, ErrDuplicateSlug):
-		writeError(w, http.StatusConflict, "slug already exists")
+		utils.WriteError(w, http.StatusConflict, "slug already exists")
 	case errors.Is(err, ErrInvalidInput):
-		writeError(w, http.StatusBadRequest, "invalid post input")
+		utils.WriteError(w, http.StatusBadRequest, "invalid post input")
 	default:
 		log.Printf("Post store error: %v", err)
-		writeError(w, http.StatusInternalServerError, "post operation failed")
+		utils.WriteError(w, http.StatusInternalServerError, "post operation failed")
 	}
 }
