@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"ieltsbeyond/internal/handler"
+	"ieltsbeyond/internal/postgres"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"ieltsbeyond/internal/post"
 )
 
 const webDist = "web/dist"
@@ -21,15 +23,15 @@ func main() {
 	}
 
 	ctx := context.Background()
-	db, err := post.Connect(ctx, databaseURL)
+	db, err := postgres.Connect(ctx, databaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to Postgres: %v", err)
 	}
 	defer db.Close()
 
-	store := post.NewPostgresStore(db)
-	publicHandler := post.NewPublicHandler(store)
-	adminHandler := post.NewAdminHandler(store, os.Getenv("ADMIN_TOKEN"))
+	store := postgres.NewPostRepository(db)
+	publicHandler := handler.NewPublicHandler(store)
+	adminHandler := handler.NewAdminHandler(store, os.Getenv("ADMIN_TOKEN"))
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

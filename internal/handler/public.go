@@ -1,7 +1,8 @@
-package post
+package handler
 
 import (
 	"errors"
+	"ieltsbeyond/internal/post"
 	"ieltsbeyond/internal/utils"
 	"log"
 	"net/http"
@@ -13,11 +14,11 @@ import (
 )
 
 type PublicHandler struct {
-	store Store
+	repo post.Repository
 }
 
-func NewPublicHandler(store Store) *PublicHandler {
-	return &PublicHandler{store: store}
+func NewPublicHandler(repo post.Repository) *PublicHandler {
+	return &PublicHandler{repo: repo}
 }
 
 func (h *PublicHandler) HandleCategories(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +51,7 @@ func (h *PublicHandler) HandlePosts(w http.ResponseWriter, r *http.Request) {
 		category = &c
 	}
 
-	posts, err := h.store.ListPublished(r.Context(), category, limit)
+	posts, err := h.repo.ListPublished(r.Context(), category, limit)
 	if err != nil {
 		log.Printf("Error getting posts: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to load posts")
@@ -65,9 +66,9 @@ func (h *PublicHandler) HandlePosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PublicHandler) HandlePostBySlug(w http.ResponseWriter, r *http.Request) {
-	p, err := h.store.GetPublishedBySlug(r.Context(), chi.URLParam(r, "slug"))
+	p, err := h.repo.GetPublishedBySlug(r.Context(), chi.URLParam(r, "slug"))
 	if err != nil {
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, post.ErrNotFound) {
 			utils.WriteError(w, http.StatusNotFound, "post not found")
 			return
 		}

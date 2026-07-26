@@ -1,9 +1,10 @@
-package post
+package handler
 
 import (
 	"encoding/json"
 	"errors"
 	"ieltsbeyond/internal/model"
+	"ieltsbeyond/internal/post"
 	"ieltsbeyond/internal/utils"
 	"log"
 	"net/http"
@@ -14,12 +15,12 @@ import (
 )
 
 type AdminHandler struct {
-	store      Store
+	store      post.Repository
 	adminToken string
 }
 
-func NewAdminHandler(store Store, adminToken string) *AdminHandler {
-	return &AdminHandler{store: store, adminToken: adminToken}
+func NewAdminHandler(repository post.Repository, adminToken string) *AdminHandler {
+	return &AdminHandler{store: repository, adminToken: adminToken}
 }
 
 func (h *AdminHandler) Middleware(next http.Handler) http.Handler {
@@ -152,11 +153,11 @@ func writePostOrError(w http.ResponseWriter, p *model.Post, err error) {
 
 func writeStoreError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, ErrNotFound):
+	case errors.Is(err, post.ErrNotFound):
 		utils.WriteError(w, http.StatusNotFound, "post not found")
-	case errors.Is(err, ErrDuplicateSlug):
+	case errors.Is(err, post.ErrDuplicateSlug):
 		utils.WriteError(w, http.StatusConflict, "slug already exists")
-	case errors.Is(err, ErrInvalidInput):
+	case errors.Is(err, post.ErrInvalidInput):
 		utils.WriteError(w, http.StatusBadRequest, "invalid post input")
 	default:
 		log.Printf("Post store error: %v", err)

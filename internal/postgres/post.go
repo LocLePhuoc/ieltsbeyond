@@ -1,4 +1,4 @@
-package post
+package postgres
 
 import (
 	"context"
@@ -7,19 +7,23 @@ import (
 	"fmt"
 	"strings"
 
+	"ieltsbeyond/internal/model"
+	"ieltsbeyond/internal/post"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"ieltsbeyond/internal/model"
 )
 
-type PostgresStore struct {
+var _ post.Repository = (*PostRepository)(nil)
+
+type PostRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewPostgresStore(db *pgxpool.Pool) *PostgresStore {
-	return &PostgresStore{db: db}
+func NewPostRepository(db *pgxpool.Pool) *PostRepository {
+	return &PostRepository{db: db}
 }
 
 func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
@@ -34,7 +38,7 @@ func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func (s *PostgresStore) ListPublished(ctx context.Context, category *model.Category, limit int) ([]model.Post, error) {
+func (s *PostRepository) ListPublished(ctx context.Context, category *model.Category, limit int) ([]model.Post, error) {
 	query := baseSelect() + " WHERE status = 'published'"
 	args := []any{}
 	if category != nil {
@@ -54,12 +58,12 @@ func (s *PostgresStore) ListPublished(ctx context.Context, category *model.Categ
 	return scanPosts(rows)
 }
 
-func (s *PostgresStore) GetPublishedBySlug(ctx context.Context, slug string) (*model.Post, error) {
+func (s *PostRepository) GetPublishedBySlug(ctx context.Context, slug string) (*model.Post, error) {
 	row := s.db.QueryRow(ctx, baseSelect()+" WHERE slug = $1 AND status = 'published'", slug)
 	return scanPost(row)
 }
 
-func (s *PostgresStore) ListAdmin(ctx context.Context) ([]model.Post, error) {
+func (s *PostRepository) ListAdmin(ctx context.Context) ([]model.Post, error) {
 	rows, err := s.db.Query(ctx, baseSelect()+" ORDER BY updated_at DESC")
 	if err != nil {
 		return nil, err
@@ -68,12 +72,12 @@ func (s *PostgresStore) ListAdmin(ctx context.Context) ([]model.Post, error) {
 	return scanPosts(rows)
 }
 
-func (s *PostgresStore) GetAdmin(ctx context.Context, id uuid.UUID) (*model.Post, error) {
+func (s *PostRepository) GetAdmin(ctx context.Context, id uuid.UUID) (*model.Post, error) {
 	row := s.db.QueryRow(ctx, baseSelect()+" WHERE id = $1", id)
 	return scanPost(row)
 }
 
-func (s *PostgresStore) Create(ctx context.Context, input model.UpsertPostInput) (*model.Post, error) {
+func (s *PostRepository) Create(ctx context.Context, input model.UpsertPostInput) (*model.Post, error) {
 	if err := ValidateInput(input); err != nil {
 		return nil, err
 	}
@@ -91,7 +95,7 @@ func (s *PostgresStore) Create(ctx context.Context, input model.UpsertPostInput)
 	return scanPost(row)
 }
 
-func (s *PostgresStore) Update(ctx context.Context, id uuid.UUID, input model.UpsertPostInput) (*model.Post, error) {
+func (s *PostRepository) Update(ctx context.Context, id uuid.UUID, input model.UpsertPostInput) (*model.Post, error) {
 	if err := ValidateInput(input); err != nil {
 		return nil, err
 	}
@@ -109,7 +113,7 @@ func (s *PostgresStore) Update(ctx context.Context, id uuid.UUID, input model.Up
 	return scanPost(row)
 }
 
-func (s *PostgresStore) Publish(ctx context.Context, id uuid.UUID) (*model.Post, error) {
+func (s *PostRepository) Publish(ctx context.Context, id uuid.UUID) (*model.Post, error) {
 	row := s.db.QueryRow(ctx, `WITH updated AS (
 		UPDATE posts SET status = 'published', published_at = COALESCE(published_at, now()), updated_at = now()
 		WHERE id = $1 RETURNING id
@@ -117,7 +121,7 @@ func (s *PostgresStore) Publish(ctx context.Context, id uuid.UUID) (*model.Post,
 	return scanPost(row)
 }
 
-func (s *PostgresStore) Unpublish(ctx context.Context, id uuid.UUID) (*model.Post, error) {
+func (s *PostRepository) Unpublish(ctx context.Context, id uuid.UUID) (*model.Post, error) {
 	row := s.db.QueryRow(ctx, `WITH updated AS (
 		UPDATE posts SET status = 'draft', updated_at = now()
 		WHERE id = $1 RETURNING id
@@ -125,13 +129,13 @@ func (s *PostgresStore) Unpublish(ctx context.Context, id uuid.UUID) (*model.Pos
 	return scanPost(row)
 }
 
-func (s *PostgresStore) Delete(ctx context.Context, id uuid.UUID) error {
+func (s *PostRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	cmd, err := s.db.Exec(ctx, "DELETE FROM posts WHERE id = $1", id)
 	if err != nil {
 		return err
 	}
 	if cmd.RowsAffected() == 0 {
-		return ErrNotFound
+		return post.ErrNotFound
 	}
 	return nil
 }
@@ -176,13 +180,30 @@ func scanPosts(rows pgx.Rows) ([]model.Post, error) {
 
 func mapPgError(err error) error {
 	if errors.Is(err, pgx.ErrNoRows) {
-		return ErrNotFound
+		return post.ErrDuplicateSlug
 	}
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		if pgErr.Code == "23505" {
-			return ErrDuplicateSlug
+			return post.ErrDuplicateSlug
 		}
 	}
 	return err
+}
+
+func ValidateInput(input model.UpsertPostInput) error {
+	if strings.TrimSpace(input.Slug) == "" || strings.TrimSpace(input.Title) == "" || strings.TrimSpace(input.Summary) == "" || strings.TrimSpace(input.Category) == "" || len(input.ContentJSON) == 0 || strings.TrimSpace(input.ContentHTML) == "" {
+		return post.ErrInvalidInput
+	}
+	if !model.IsValidCategory(input.Category) {
+		return post.ErrInvalidInput
+	}
+	if !jsonLooksValid(input.ContentJSON) {
+		return post.ErrInvalidInput
+	}
+	return nil
+}
+
+func jsonLooksValid(raw []byte) bool {
+	return json.Valid(raw)
 }

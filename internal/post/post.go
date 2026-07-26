@@ -2,21 +2,21 @@ package post
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"strings"
+	"ieltsbeyond/internal/model"
 
 	"github.com/google/uuid"
-	"ieltsbeyond/internal/model"
 )
 
+
 var (
-	ErrNotFound      = errors.New("post not found")
+	ErrNotFound = errors.New("post not found")
 	ErrDuplicateSlug = errors.New("slug already exists")
 	ErrInvalidInput  = errors.New("invalid post input")
 )
 
-type Store interface {
+
+type Repository interface {
 	ListPublished(ctx context.Context, category *model.Category, limit int) ([]model.Post, error)
 	GetPublishedBySlug(ctx context.Context, slug string) (*model.Post, error)
 	ListAdmin(ctx context.Context) ([]model.Post, error)
@@ -26,21 +26,4 @@ type Store interface {
 	Publish(ctx context.Context, id uuid.UUID) (*model.Post, error)
 	Unpublish(ctx context.Context, id uuid.UUID) (*model.Post, error)
 	Delete(ctx context.Context, id uuid.UUID) error
-}
-
-func ValidateInput(input model.UpsertPostInput) error {
-	if strings.TrimSpace(input.Slug) == "" || strings.TrimSpace(input.Title) == "" || strings.TrimSpace(input.Summary) == "" || strings.TrimSpace(input.Category) == "" || len(input.ContentJSON) == 0 || strings.TrimSpace(input.ContentHTML) == "" {
-		return ErrInvalidInput
-	}
-	if !model.IsValidCategory(input.Category) {
-		return ErrInvalidInput
-	}
-	if !jsonLooksValid(input.ContentJSON) {
-		return ErrInvalidInput
-	}
-	return nil
-}
-
-func jsonLooksValid(raw []byte) bool {
-	return json.Valid(raw)
 }
