@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"ieltsbeyond/internal/model"
 	"ieltsbeyond/internal/post"
 	"ieltsbeyond/internal/utils"
 	"log"
@@ -133,9 +132,9 @@ func parseID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
 	return id, true
 }
 
-func decodeInput(w http.ResponseWriter, r *http.Request) (model.UpsertPostInput, bool) {
+func decodeInput(w http.ResponseWriter, r *http.Request) (post.UpsertPostInput, bool) {
 	defer r.Body.Close()
-	var input model.UpsertPostInput
+	var input post.UpsertPostInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid JSON body")
 		return input, false
@@ -143,7 +142,7 @@ func decodeInput(w http.ResponseWriter, r *http.Request) (model.UpsertPostInput,
 	return input, true
 }
 
-func writePostOrError(w http.ResponseWriter, p *model.Post, err error) {
+func writePostOrError(w http.ResponseWriter, p *post.Post, err error) {
 	if err != nil {
 		writeStoreError(w, err)
 		return

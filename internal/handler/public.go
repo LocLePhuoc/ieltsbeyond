@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"ieltsbeyond/internal/model"
-
 	"github.com/go-chi/chi/v5"
 )
 
@@ -22,9 +20,9 @@ func NewPublicHandler(repo post.Repository) *PublicHandler {
 }
 
 func (h *PublicHandler) HandleCategories(w http.ResponseWriter, r *http.Request) {
-	infos := make([]model.CategoryInfo, len(model.AllCategories))
-	for i, c := range model.AllCategories {
-		infos[i] = model.CategoryInfo{Slug: c, Description: model.CategoryDescriptions[c]}
+	infos := make([]post.CategoryInfo, len(post.AllCategories))
+	for i, c := range post.AllCategories {
+		infos[i] = post.CategoryInfo{Slug: c, Description: post.CategoryDescriptions[c]}
 	}
 	utils.WriteJSON(w, http.StatusOK, infos)
 }
@@ -41,13 +39,13 @@ func (h *PublicHandler) HandlePosts(w http.ResponseWriter, r *http.Request) {
 		limit = parsed
 	}
 
-	var category *model.Category
+	var category *post.Category
 	if categorySlug != "" {
-		if !model.IsValidCategory(categorySlug) {
+		if !post.IsValidCategory(categorySlug) {
 			utils.WriteError(w, http.StatusBadRequest, "invalid category")
 			return
 		}
-		c := model.Category(categorySlug)
+		c := post.Category(categorySlug)
 		category = &c
 	}
 
@@ -58,7 +56,7 @@ func (h *PublicHandler) HandlePosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out := make([]model.PublicPost, len(posts))
+	out := make([]post.PublicPost, len(posts))
 	for i, p := range posts {
 		out[i] = p.Public(false)
 	}

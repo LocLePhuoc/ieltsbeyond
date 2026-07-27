@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"ieltsbeyond/internal/model"
 	"ieltsbeyond/internal/post"
 
 	"github.com/google/uuid"
@@ -38,7 +37,7 @@ func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func (s *PostRepository) ListPublished(ctx context.Context, category *model.Category, limit int) ([]model.Post, error) {
+func (s *PostRepository) ListPublished(ctx context.Context, category *post.Category, limit int) ([]post.Post, error) {
 	query := baseSelect() + " WHERE status = 'published'"
 	args := []any{}
 	if category != nil {
@@ -58,12 +57,12 @@ func (s *PostRepository) ListPublished(ctx context.Context, category *model.Cate
 	return scanPosts(rows)
 }
 
-func (s *PostRepository) GetPublishedBySlug(ctx context.Context, slug string) (*model.Post, error) {
+func (s *PostRepository) GetPublishedBySlug(ctx context.Context, slug string) (*post.Post, error) {
 	row := s.db.QueryRow(ctx, baseSelect()+" WHERE slug = $1 AND status = 'published'", slug)
 	return scanPost(row)
 }
 
-func (s *PostRepository) ListAdmin(ctx context.Context) ([]model.Post, error) {
+func (s *PostRepository) ListAdmin(ctx context.Context) ([]post.Post, error) {
 	rows, err := s.db.Query(ctx, baseSelect()+" ORDER BY updated_at DESC")
 	if err != nil {
 		return nil, err
@@ -72,12 +71,12 @@ func (s *PostRepository) ListAdmin(ctx context.Context) ([]model.Post, error) {
 	return scanPosts(rows)
 }
 
-func (s *PostRepository) GetAdmin(ctx context.Context, id uuid.UUID) (*model.Post, error) {
+func (s *PostRepository) GetAdmin(ctx context.Context, id uuid.UUID) (*post.Post, error) {
 	row := s.db.QueryRow(ctx, baseSelect()+" WHERE id = $1", id)
 	return scanPost(row)
 }
 
-func (s *PostRepository) Create(ctx context.Context, input model.UpsertPostInput) (*model.Post, error) {
+func (s *PostRepository) Create(ctx context.Context, input post.UpsertPostInput) (*post.Post, error) {
 	if err := ValidateInput(input); err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func (s *PostRepository) Create(ctx context.Context, input model.UpsertPostInput
 	return scanPost(row)
 }
 
-func (s *PostRepository) Update(ctx context.Context, id uuid.UUID, input model.UpsertPostInput) (*model.Post, error) {
+func (s *PostRepository) Update(ctx context.Context, id uuid.UUID, input post.UpsertPostInput) (*post.Post, error) {
 	if err := ValidateInput(input); err != nil {
 		return nil, err
 	}
@@ -113,7 +112,7 @@ func (s *PostRepository) Update(ctx context.Context, id uuid.UUID, input model.U
 	return scanPost(row)
 }
 
-func (s *PostRepository) Publish(ctx context.Context, id uuid.UUID) (*model.Post, error) {
+func (s *PostRepository) Publish(ctx context.Context, id uuid.UUID) (*post.Post, error) {
 	row := s.db.QueryRow(ctx, `WITH updated AS (
 		UPDATE posts SET status = 'published', published_at = COALESCE(published_at, now()), updated_at = now()
 		WHERE id = $1 RETURNING id
@@ -121,7 +120,7 @@ func (s *PostRepository) Publish(ctx context.Context, id uuid.UUID) (*model.Post
 	return scanPost(row)
 }
 
-func (s *PostRepository) Unpublish(ctx context.Context, id uuid.UUID) (*model.Post, error) {
+func (s *PostRepository) Unpublish(ctx context.Context, id uuid.UUID) (*post.Post, error) {
 	row := s.db.QueryRow(ctx, `WITH updated AS (
 		UPDATE posts SET status = 'draft', updated_at = now()
 		WHERE id = $1 RETURNING id
@@ -148,8 +147,8 @@ type rowScanner interface {
 	Scan(dest ...any) error
 }
 
-func scanPost(row rowScanner) (*model.Post, error) {
-	var p model.Post
+func scanPost(row rowScanner) (*post.Post, error) {
+	var p post.Post
 	var tagsBytes []byte
 	if err := row.Scan(&p.ID, &p.Slug, &p.Title, &p.Summary, &p.Category, &tagsBytes, &p.CoverImage, &p.Status, &p.ContentJSON, &p.ContentHTML, &p.CreatedAt, &p.UpdatedAt, &p.PublishedAt); err != nil {
 		return nil, mapPgError(err)
@@ -163,8 +162,8 @@ func scanPost(row rowScanner) (*model.Post, error) {
 	return &p, nil
 }
 
-func scanPosts(rows pgx.Rows) ([]model.Post, error) {
-	var posts []model.Post
+func scanPosts(rows pgx.Rows) ([]post.Post, error) {
+	var posts []post.Post
 	for rows.Next() {
 		p, err := scanPost(rows)
 		if err != nil {
@@ -191,11 +190,11 @@ func mapPgError(err error) error {
 	return err
 }
 
-func ValidateInput(input model.UpsertPostInput) error {
+func ValidateInput(input post.UpsertPostInput) error {
 	if strings.TrimSpace(input.Slug) == "" || strings.TrimSpace(input.Title) == "" || strings.TrimSpace(input.Summary) == "" || strings.TrimSpace(input.Category) == "" || len(input.ContentJSON) == 0 || strings.TrimSpace(input.ContentHTML) == "" {
 		return post.ErrInvalidInput
 	}
-	if !model.IsValidCategory(input.Category) {
+	if !post.IsValidCategory(input.Category) {
 		return post.ErrInvalidInput
 	}
 	if !jsonLooksValid(input.ContentJSON) {
