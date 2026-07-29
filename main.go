@@ -33,6 +33,9 @@ func main() {
 	publicHandler := handler.NewPublicHandler(store)
 	adminHandler := handler.NewAdminHandler(store, os.Getenv("ADMIN_TOKEN"))
 
+	writingTaskRepo := postgres.NewWritingTaskRepository(db)
+	writingTaskhandler := handler.NewWritingTaskHandler(*writingTaskRepo)
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -44,6 +47,7 @@ func main() {
 		r.Get("/posts", publicHandler.HandlePosts)
 		r.Get("/posts/{slug}", publicHandler.HandlePostBySlug)
 		r.Route("/admin", adminHandler.Routes)
+		r.Get("/writing/task1", writingTaskhandler.HandlerGetAllTask1)
 	})
 
 	// Static content assets (cover images, etc.)

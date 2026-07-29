@@ -1,8 +1,8 @@
-package model
+package writing
 
 import "time"
 
-type WritingSubmission struct {
+type Submission struct {
 	Id               string
 	TaskId           string
 	UserId           string
