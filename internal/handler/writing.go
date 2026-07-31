@@ -3,10 +3,14 @@ package handler
 import (
 	"fmt"
 	"ieltsbeyond/internal/postgres"
+	"ieltsbeyond/internal/storage"
 	"ieltsbeyond/internal/utils"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type WritingTaskHandler struct {
@@ -57,6 +61,25 @@ func (wh *WritingTaskHandler) HandlerGetAllTask2(w http.ResponseWriter, r *http.
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, tasks2)
+}
+
+func (wh *WritingTaskHandler) HandlerGetTask1(w http.ResponseWriter, r *http.Request) {
+	taskId := chi.URLParam(r, "id")
+	task, err := wh.db.GetTask1(r.Context(), taskId)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Cannot get Writing Task 1")
+		return
+	}
+	if parts := strings.SplitN(task.ImageKey, "/", 2); len(parts) == 2 {
+		bucket, key := parts[0], parts[1]
+		signedURL, err := storage.Instance.GetObjectURL(r.Context(), bucket, key)
+		if err != nil {
+			log.Printf("Cannot get presigned URL: %v", err)
+		} else {
+			task.ImageKey = signedURL
+		}
+	}
+	utils.WriteJSON(w, http.StatusOK, task)
 }
 
 func getLimitParam(r *http.Request) (int, error) {

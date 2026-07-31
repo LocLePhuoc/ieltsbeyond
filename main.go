@@ -49,6 +49,7 @@ func main() {
 		r.Route("/admin", adminHandler.Routes)
 		r.Get("/writing/task1", writingTaskhandler.HandlerGetAllTask1)
 		r.Get("/writing/task2", writingTaskhandler.HandlerGetAllTask2)
+		r.Get("/writing/task1/{id}", writingTaskhandler.HandlerGetTask1)
 	})
 
 	// Static content assets (cover images, etc.)

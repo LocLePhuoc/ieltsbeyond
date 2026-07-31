@@ -60,6 +60,10 @@ export function getWritingTask1List(limit = 20): Promise<WritingTask1[]> {
   return getJSON<WritingTask1[]>(`/writing/task1?limit=${limit}`);
 }
 
+export function getWritingTask1(id: string): Promise<WritingTask1> {
+  return getJSON<WritingTask1>(`/writing/task1/${encodeURIComponent(id)}`);
+}
+
 export function getWritingTask2List(limit = 20): Promise<WritingTask2[]> {
   return getJSON<WritingTask2[]>(`/writing/task2?limit=${limit}`);
 }

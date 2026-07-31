@@ -11,6 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
+var Instance, _ = NewClient()
+
 type Client struct {
 	presign *s3.PresignClient
 }
@@ -31,8 +33,10 @@ func NewClient() (*Client, error) {
 	}
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(os.Getenv("STORAGE_ENDPOINT"))
-		o.UsePathStyle = true
+		if endpoint := os.Getenv("STORAGE_ENDPOINT"); endpoint != "" {
+			o.BaseEndpoint = aws.String(endpoint)
+			o.UsePathStyle = true
+		}
 	})
 
 	return &Client{presign: s3.NewPresignClient(client)}, nil
