@@ -84,11 +84,11 @@ func (s *WritingTaskRepository) UpsertTask1(ctx context.Context, task writing.Ta
 		task.Id = uuid.NewString()
 	}
 	row := s.db.QueryRow(ctx, `
-		INSERT INTO writing_tasks1 (id, question, type, image_path)
+		INSERT INTO writing_tasks1 (id, question, type, image_key)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (id) DO UPDATE SET question = $2, type = $3, image_path = $4, updated_at = now()
 		RETURNING id, question, type, image_path
-	`, task.Id, task.Question, task.Type, task.ImagePath)
+	`, task.Id, task.Question, task.Type, task.ImageKey)
 	return scanTask1(row)
 }
 
@@ -107,7 +107,7 @@ func (s *WritingTaskRepository) UpsertTask2(ctx context.Context, task writing.Ta
 
 func scanTask1(row rowScanner) (writing.Task1, error) {
 	var task writing.Task1
-	if err := row.Scan(&task.Id, &task.Question, &task.Type, &task.ImagePath); err != nil {
+	if err := row.Scan(&task.Id, &task.Question, &task.Type, &task.ImageKey); err != nil {
 		return writing.Task1{}, err
 	}
 	return task, nil

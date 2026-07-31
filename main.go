@@ -61,6 +61,7 @@ func main() {
 	if port == "" {
 		port = "3000"
 	}
+
 	log.Printf("Server starting on http://localhost:%s", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatalf("Server failed: %v", err)

@@ -63,10 +63,10 @@ type Paragraph struct {
 }
 
 type Task1 struct {
-	Id        string    `json:"id"`
-	Question  string    `json:"question"`
-	Type      Task1Type `json:"type"`
-	ImagePath string    `json:"image_path"`
+	Id       string    `json:"id"`
+	Question string    `json:"question"`
+	Type     Task1Type `json:"type"`
+	ImageKey string    `json:"image_key"`
 }
 
 type Task2 struct {
