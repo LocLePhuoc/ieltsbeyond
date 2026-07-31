@@ -48,6 +48,7 @@ func main() {
 		r.Get("/posts/{slug}", publicHandler.HandlePostBySlug)
 		r.Route("/admin", adminHandler.Routes)
 		r.Get("/writing/task1", writingTaskhandler.HandlerGetAllTask1)
+		r.Get("/writing/task2", writingTaskhandler.HandlerGetAllTask2)
 	})
 
 	// Static content assets (cover images, etc.)

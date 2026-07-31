@@ -19,7 +19,7 @@ export const navItems: NavItem[] = [
   { label: "Travelling", href: "/travelling", tabId: "travelling", icon: "travelling" },
   {
     label: "Writing",
-    href: "/writing/practice",
+    href: "/writing",
     tabId: "writing",
     icon: "writing",
     children: [{ label: "Practice", href: "/writing/practice", tabId: "writing-practice" }],

@@ -1,6 +1,13 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 
-const task = {
+interface PracticeTask {
+  type: string;
+  category: string;
+  question: string;
+}
+
+const defaultTask: PracticeTask = {
   type: "Task 2",
   category: "Opinion",
   question:
@@ -8,6 +15,8 @@ const task = {
 };
 
 export default function PracticePage() {
+  const location = useLocation();
+  const task = (location.state as PracticeTask | null) ?? defaultTask;
   const [answer, setAnswer] = useState("");
 
   function handleCheckAnswer() {}
