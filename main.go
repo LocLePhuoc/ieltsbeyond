@@ -2,14 +2,13 @@ package main
 
 import (
 	"context"
+	"ieltsbeyond/internal/handler"
+	"ieltsbeyond/internal/postgres"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-
-	"ieltsbeyond/internal/handler"
-	"ieltsbeyond/internal/postgres"
-
+	logger "ieltsbeyond/internal/logging"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -25,7 +24,7 @@ func main() {
 	ctx := context.Background()
 	db, err := postgres.Connect(ctx, databaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to Postgres: %v", err)
+		logger.Instance.Fatalf("Failed to connect to Postgres: %v", err)
 	}
 	defer db.Close()
 
@@ -64,9 +63,9 @@ func main() {
 		port = "3000"
 	}
 
-	log.Printf("Server starting on http://localhost:%s", port)
+	logger.Instance.Infof("Server starting on http://localhost:%s", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatalf("Server failed: %v", err)
+		logger.Instance.Fatalf("Server failed: %v", err)
 	}
 }
 
