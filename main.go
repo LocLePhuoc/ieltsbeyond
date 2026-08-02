@@ -3,14 +3,17 @@ package main
 import (
 	"context"
 	"ieltsbeyond/internal/handler"
+	logger "ieltsbeyond/internal/logging"
+	"ieltsbeyond/internal/middleware"
+	"ieltsbeyond/internal/mongodb"
 	"ieltsbeyond/internal/postgres"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	logger "ieltsbeyond/internal/logging"
+
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimw "github.com/go-chi/chi/v5/middleware"
 )
 
 const webDist = "web/dist"
@@ -33,12 +36,13 @@ func main() {
 	adminHandler := handler.NewAdminHandler(store, os.Getenv("ADMIN_TOKEN"))
 
 	writingTaskRepo := postgres.NewWritingTaskRepository(db)
-	writingTaskhandler := handler.NewWritingTaskHandler(*writingTaskRepo)
+	submissionRepo := mongodb.NewSubmissionRepository()
+	writingTaskHandler := handler.NewWritingTaskHandler(*writingTaskRepo, submissionRepo)
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Compress(5))
+	r.Use(chimw.Logger)
+	r.Use(chimw.Recoverer)
+	r.Use(chimw.Compress(5))
 
 	// JSON API
 	r.Route("/api", func(r chi.Router) {
@@ -46,9 +50,11 @@ func main() {
 		r.Get("/posts", publicHandler.HandlePosts)
 		r.Get("/posts/{slug}", publicHandler.HandlePostBySlug)
 		r.Route("/admin", adminHandler.Routes)
-		r.Get("/writing/task1", writingTaskhandler.HandlerGetAllTask1)
-		r.Get("/writing/task2", writingTaskhandler.HandlerGetAllTask2)
-		r.Get("/writing/task1/{id}", writingTaskhandler.HandlerGetTask1)
+		r.Get("/writing/task1", writingTaskHandler.HandlerGetAllTask1)
+		r.Get("/writing/task2", writingTaskHandler.HandlerGetAllTask2)
+		r.Get("/writing/task1/{id}", writingTaskHandler.HandlerGetTask1)
+
+		r.With(middleware.Auth).Post("/writing/task1/{id}/submit", writingTaskHandler.HandlerSubmitTask1)
 	})
 
 	// Static content assets (cover images, etc.)

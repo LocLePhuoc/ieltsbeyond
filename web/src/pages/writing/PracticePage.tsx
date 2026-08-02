@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { submitWritingTask1 } from "../../lib/api";
 
 interface PracticeTask {
+  id?: string;
   type: string;
   category: string;
   question: string;
@@ -20,10 +22,26 @@ export default function PracticePage() {
   const task = (location.state as PracticeTask | null) ?? defaultTask;
   const [answer, setAnswer] = useState("");
   const [imageFailed, setImageFailed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => setImageFailed(false), [task.imageKey]);
 
-  function handleCheckAnswer() {}
+  async function handleCheckAnswer() {
+    if (task.type !== "Task 1" || !task.id) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await submitWritingTask1(task.id, answer);
+      setSubmitted(true);
+    } catch {
+      setSubmitError("Failed to submit your answer. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -67,13 +85,16 @@ export default function PracticePage() {
         />
       </section>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-3">
+        {submitError && <span className="text-sm text-red-500">{submitError}</span>}
+        {submitted && !submitError && <span className="text-sm text-sage">Submitted!</span>}
         <button
           type="button"
           onClick={handleCheckAnswer}
-          className="px-6 py-3 rounded-xl bg-sage text-white text-sm font-semibold shadow-soft-lg hover:bg-sage-dark transition-colors"
+          disabled={submitting}
+          className="px-6 py-3 rounded-xl bg-sage text-white text-sm font-semibold shadow-soft-lg hover:bg-sage-dark transition-colors disabled:opacity-60 disabled:cursor-wait"
         >
-          Check Answer
+          {submitting ? "Submitting..." : "Check Answer"}
         </button>
       </div>
     </div>

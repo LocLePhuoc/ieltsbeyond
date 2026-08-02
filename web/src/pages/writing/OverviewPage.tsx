@@ -34,7 +34,7 @@ export default function OverviewPage() {
     try {
       const task = await getWritingTask1(taskId);
       navigate("/writing/practice", {
-        state: { type: "Task 1", category: task.type, question: task.question, imageKey: task.image_key },
+        state: { id: task.id, type: "Task 1", category: task.type, question: task.question, imageKey: task.image_key },
       });
     } catch {
       setLoadingTask1Id(null);

@@ -1,24 +1,34 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
+	"ieltsbeyond/internal/middleware"
+	"ieltsbeyond/internal/mongodb"
 	"ieltsbeyond/internal/postgres"
 	"ieltsbeyond/internal/storage"
 	"ieltsbeyond/internal/utils"
+	"ieltsbeyond/internal/writing"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
+// TODO: fill in the Mongo collection name used for Task 1 submissions
+const task1SubmissionCollection = "writing_task1"
+
 type WritingTaskHandler struct {
-	db postgres.WritingTaskRepository
+	db             postgres.WritingTaskRepository
+	submissionRepo *mongodb.SubmissionRepository
 }
 
-func NewWritingTaskHandler(db postgres.WritingTaskRepository) *WritingTaskHandler {
-	return &WritingTaskHandler{db: db}
+func NewWritingTaskHandler(db postgres.WritingTaskRepository, submissionRepo *mongodb.SubmissionRepository) *WritingTaskHandler {
+	return &WritingTaskHandler{db: db, submissionRepo: submissionRepo}
 }
 
 const defaultTaskLimit = 20
@@ -104,4 +114,43 @@ func getCursorParam(r *http.Request) (int, error) {
 		cursor = parsed
 	}
 	return cursor, nil
+}
+
+type SubmitTask1request struct {
+	TaskId string `json:"task_id"`
+	Answer string `json:"answer"`
+}
+
+func (wh *WritingTaskHandler) HandlerSubmitTask1(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.UserIdFromContext(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	var req SubmitTask1request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Answer == "" {
+		utils.WriteError(w, http.StatusBadRequest, "answer is required")
+		return
+	}
+
+	submission := writing.Submission{
+		Id:         uuid.New().String(),
+		UserId:     userId,
+		TaskId:     req.TaskId,
+		Paragraphs: strings.Split(req.Answer, "\n"),
+		SubmitTime: time.Now().UTC(),
+	}
+
+	saved, err := wh.submissionRepo.UpsertWritingSubmission(r.Context(), task1SubmissionCollection, submission)
+	if err != nil {
+		log.Printf("Error saving submission: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to save submission")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, saved)
 }

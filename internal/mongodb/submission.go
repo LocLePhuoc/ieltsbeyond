@@ -3,15 +3,18 @@ package mongodb
 import (
 	"context"
 	logger "ieltsbeyond/internal/logging"
+	"ieltsbeyond/internal/writing"
 	"os"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type SubmissionRepository struct {
-	client *mongo.Client
+	client   *mongo.Client
+	database *mongo.Database
 }
 
 func NewSubmissionRepository() *SubmissionRepository {
@@ -22,10 +25,19 @@ func NewSubmissionRepository() *SubmissionRepository {
 	if err != nil {
 		logger.Instance.Fatal(err)
 	}
-	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
-			logger.Instance.Fatal(err)
-		}
-	}()
-	return &SubmissionRepository{client: client}
+	database := client.Database(os.Getenv("SUBMISSION_REPO_DATABASE"))
+	return &SubmissionRepository{client: client, database: database}
+}
+
+func (s *SubmissionRepository) UpsertWritingSubmission(ctx context.Context, collectionName string, submission writing.Submission) (writing.Submission, error) {
+	collection := s.database.Collection(collectionName) // TODO: fill in collection name
+
+	filter := bson.M{"_id": submission.Id}
+	update := bson.M{"$set": submission}
+
+	_, err := collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+	if err != nil {
+		return writing.Submission{}, err
+	}
+	return submission, nil
 }
