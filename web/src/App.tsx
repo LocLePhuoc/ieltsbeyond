@@ -6,6 +6,9 @@ import PostDetailPage from "./pages/PostDetailPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminPostListPage from "./admin/AdminPostListPage";
 import AdminPostEditorPage from "./admin/AdminPostEditorPage";
+import WritingPage from "./pages/WritingPage";
+import OverviewPage from "./pages/writing/OverviewPage";
+import PracticePage from "./pages/writing/PracticePage";
 
 export default function App() {
   return (
@@ -18,6 +21,10 @@ export default function App() {
         <Route path="tech" element={<CategoryPage category="tech" />} />
         <Route path="gaming" element={<CategoryPage category="gaming" />} />
         <Route path="travelling" element={<CategoryPage category="travelling" />} />
+        <Route path="writing" element={<WritingPage />}>
+          <Route index element={<OverviewPage />} />
+          <Route path="practice" element={<PracticePage />} />
+        </Route>
         <Route path="posts/:slug" element={<PostDetailPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

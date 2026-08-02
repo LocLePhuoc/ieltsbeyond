@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { navItems } from "./navItems";
 import NavIcon from "./NavIcon";
 
 export default function MobileHeader({ activeTab }: { activeTab: string }) {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <header className="md:hidden fixed top-0 left-0 right-0 z-50 px-3 pt-3">
@@ -31,19 +32,41 @@ export default function MobileHeader({ activeTab }: { activeTab: string }) {
             {navItems.map((item) => {
               const active = activeTab === item.tabId;
               return (
-                <Link
-                  key={item.tabId}
-                  to={item.href}
-                  onClick={() => setOpen(false)}
-                  className={
-                    active
-                      ? "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold text-sage bg-sage-50/80"
-                      : "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] text-charcoal-light hover:bg-gray-50/80 transition-colors"
-                  }
-                >
-                  <NavIcon icon={item.icon} />
-                  {item.label}
-                </Link>
+                <div key={item.tabId}>
+                  <Link
+                    to={item.href}
+                    onClick={() => setOpen(false)}
+                    className={
+                      active
+                        ? "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold text-sage bg-sage-50/80"
+                        : "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] text-charcoal-light hover:bg-gray-50/80 transition-colors"
+                    }
+                  >
+                    <NavIcon icon={item.icon} />
+                    {item.label}
+                  </Link>
+                  {item.children && (
+                    <div className="flex flex-col gap-0.5 mt-0.5 ml-[15px] pl-4 border-l border-gray-200/70">
+                      {item.children.map((child) => {
+                        const childActive = location.pathname === child.href;
+                        return (
+                          <Link
+                            key={child.tabId}
+                            to={child.href}
+                            onClick={() => setOpen(false)}
+                            className={
+                              childActive
+                                ? "flex items-center px-3 py-2 rounded-xl text-[13px] font-semibold text-sage bg-sage-50/80"
+                                : "flex items-center px-3 py-2 rounded-xl text-[13px] text-charcoal-light hover:bg-gray-50/80 transition-colors"
+                            }
+                          >
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>

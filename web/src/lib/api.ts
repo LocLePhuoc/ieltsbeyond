@@ -27,6 +27,18 @@ async function getJSON<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function postJSON<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`Request to ${path} failed with status ${res.status}`);
+  }
+  return res.json() as Promise<T>;
+}
+
 export function getRecentPosts(limit: number): Promise<Post[]> {
   return getJSON<Post[]>(`/posts?limit=${limit}`);
 }
@@ -41,4 +53,44 @@ export function getPostBySlug(slug: string): Promise<Post> {
 
 export function getCategories(): Promise<CategoryInfo[]> {
   return getJSON<CategoryInfo[]>(`/categories`);
+}
+
+export interface WritingTask1 {
+  id: string;
+  question: string;
+  type: string;
+  image_key: string;
+}
+
+export interface WritingTask2 {
+  id: string;
+  question: string;
+  category: string;
+}
+
+export function getWritingTask1List(limit = 20): Promise<WritingTask1[]> {
+  return getJSON<WritingTask1[]>(`/writing/task1?limit=${limit}`);
+}
+
+export function getWritingTask1(id: string): Promise<WritingTask1> {
+  return getJSON<WritingTask1>(`/writing/task1/${encodeURIComponent(id)}`);
+}
+
+export function getWritingTask2List(limit = 20): Promise<WritingTask2[]> {
+  return getJSON<WritingTask2[]>(`/writing/task2?limit=${limit}`);
+}
+
+export interface WritingSubmission {
+  id: string;
+  task_id: string;
+  user_id: string;
+  paragraphs: string[];
+  submit_time: string;
+}
+
+export function submitWritingTask1(taskId: string, answer: string): Promise<WritingSubmission> {
+  return postJSON<WritingSubmission>(`/writing/task1/${encodeURIComponent(taskId)}/submit`, {
+    task_id: taskId,
+    answer,
+  });
 }

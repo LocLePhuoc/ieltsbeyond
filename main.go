@@ -2,16 +2,18 @@ package main
 
 import (
 	"context"
+	"ieltsbeyond/internal/handler"
+	logger "ieltsbeyond/internal/logging"
+	"ieltsbeyond/internal/middleware"
+	"ieltsbeyond/internal/mongodb"
+	"ieltsbeyond/internal/postgres"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"ieltsbeyond/internal/handler"
-	"ieltsbeyond/internal/postgres"
-
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimw "github.com/go-chi/chi/v5/middleware"
 )
 
 const webDist = "web/dist"
@@ -25,7 +27,7 @@ func main() {
 	ctx := context.Background()
 	db, err := postgres.Connect(ctx, databaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to Postgres: %v", err)
+		logger.Instance.Fatalf("Failed to connect to Postgres: %v", err)
 	}
 	defer db.Close()
 
@@ -33,10 +35,14 @@ func main() {
 	publicHandler := handler.NewPublicHandler(store)
 	adminHandler := handler.NewAdminHandler(store, os.Getenv("ADMIN_TOKEN"))
 
+	writingTaskRepo := postgres.NewWritingTaskRepository(db)
+	submissionRepo := mongodb.NewSubmissionRepository()
+	writingTaskHandler := handler.NewWritingTaskHandler(*writingTaskRepo, submissionRepo)
+
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Compress(5))
+	r.Use(chimw.Logger)
+	r.Use(chimw.Recoverer)
+	r.Use(chimw.Compress(5))
 
 	// JSON API
 	r.Route("/api", func(r chi.Router) {
@@ -44,6 +50,11 @@ func main() {
 		r.Get("/posts", publicHandler.HandlePosts)
 		r.Get("/posts/{slug}", publicHandler.HandlePostBySlug)
 		r.Route("/admin", adminHandler.Routes)
+		r.Get("/writing/task1", writingTaskHandler.HandlerGetAllTask1)
+		r.Get("/writing/task2", writingTaskHandler.HandlerGetAllTask2)
+		r.Get("/writing/task1/{id}", writingTaskHandler.HandlerGetTask1)
+
+		r.With(middleware.Auth).Post("/writing/task1/{id}/submit", writingTaskHandler.HandlerSubmitTask1)
 	})
 
 	// Static content assets (cover images, etc.)
@@ -57,9 +68,10 @@ func main() {
 	if port == "" {
 		port = "3000"
 	}
-	log.Printf("Server starting on http://localhost:%s", port)
+
+	logger.Instance.Infof("Server starting on http://localhost:%s", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatalf("Server failed: %v", err)
+		logger.Instance.Fatalf("Server failed: %v", err)
 	}
 }
 

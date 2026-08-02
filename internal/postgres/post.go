@@ -25,18 +25,6 @@ func NewPostRepository(db *pgxpool.Pool) *PostRepository {
 	return &PostRepository{db: db}
 }
 
-func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(ctx, databaseURL)
-	if err != nil {
-		return nil, err
-	}
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
-		return nil, err
-	}
-	return pool, nil
-}
-
 func (s *PostRepository) ListPublished(ctx context.Context, category *post.Category, limit int) ([]post.Post, error) {
 	query := baseSelect() + " WHERE status = 'published'"
 	args := []any{}
