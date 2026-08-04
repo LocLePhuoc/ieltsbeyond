@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"ieltsbeyond/internal/llm"
 	"ieltsbeyond/internal/middleware"
 	"ieltsbeyond/internal/repository/mongodb"
 	"ieltsbeyond/internal/repository/postgres"
@@ -25,10 +26,11 @@ const task1SubmissionCollection = "writing_task1"
 type WritingTaskHandler struct {
 	db             postgres.WritingTaskRepository
 	submissionRepo *mongodb.SubmissionRepository
+	llmService     *llm.Provider
 }
 
-func NewWritingTaskHandler(db postgres.WritingTaskRepository, submissionRepo *mongodb.SubmissionRepository) *WritingTaskHandler {
-	return &WritingTaskHandler{db: db, submissionRepo: submissionRepo}
+func NewWritingTaskHandler(db postgres.WritingTaskRepository, submissionRepo *mongodb.SubmissionRepository, llmService *llm.Provider) *WritingTaskHandler {
+	return &WritingTaskHandler{db: db, submissionRepo: submissionRepo, llmService: llmService}
 }
 
 const defaultTaskLimit = 20
@@ -151,6 +153,5 @@ func (wh *WritingTaskHandler) HandlerSubmitTask1(w http.ResponseWriter, r *http.
 		utils.WriteError(w, http.StatusInternalServerError, "failed to save submission")
 		return
 	}
-
 	utils.WriteJSON(w, http.StatusOK, saved)
 }

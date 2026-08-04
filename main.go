@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"ieltsbeyond/internal/handler"
+	"ieltsbeyond/internal/llm"
 	logger "ieltsbeyond/internal/logging"
 	"ieltsbeyond/internal/middleware"
 	"ieltsbeyond/internal/repository/mongodb"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -38,6 +40,14 @@ func main() {
 	writingTaskRepo := postgres.NewWritingTaskRepository(db)
 	submissionRepo := mongodb.NewSubmissionRepository()
 	writingTaskHandler := handler.NewWritingTaskHandler(*writingTaskRepo, submissionRepo)
+
+	llmTimeout, _ := strconv.Atoi(os.Getenv("LLM_TIMEOUT"))
+	llmService := llm.NewOpenRouterProvider(
+		os.Getenv("LLM_URL"),
+		os.Getenv("LLM_API_KEY"),
+		os.Getenv("LLM_MODEL"),
+		llmTimeout,
+	)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)

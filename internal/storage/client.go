@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	awscredentials "github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
 )
 
@@ -64,11 +67,7 @@ func (s *Client) GetObjectURL(ctx context.Context, bucket string, objectKey stri
 func (s *Client) UploadObject(ctx context.Context, bucket string, objectKey string, filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
-		logger.Instance.Errorw("Couldn't open file to upload.",
-			"file", filePath,
-			"error", err,
-		)
-		return err
+		return fmt.Errorf("Object upload Failed. bucket=%s, objectKey=%s, filePath=%s. %w", bucket, objectKey, filePath, err)
 	}
 	defer file.Close()
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
@@ -80,12 +79,9 @@ func (s *Client) UploadObject(ctx context.Context, bucket string, objectKey stri
 	if err != nil {
 		var apiErr smithy.APIError
 		if errors.As(err, &apiErr) && apiErr.ErrorCode() == "EntityTooLarge" {
-			logger.Instance.Errorw("Object too large to upload. Needs multipart upload.",
-				"file", filePath,
-				"error", err,
-			)
+			err = fmt.Errorf("Object too large to upload. Needs multipart upload. bucket=%s, objectKey=%s, filePath=%s. %w", bucket, objectKey, filePath, err)
 		} else {
-			logger.Instance.Errorw("Failed to upload object.", "file", filePath, "error", err)
+			err = fmt.Errorf("Object Upload Failed. bucket=%s, objectKey=%s, filePath=%s. %w", bucket, objectKey, filePath, err)
 		}
 		return err
 	}
@@ -96,7 +92,7 @@ func (s *Client) UploadObject(ctx context.Context, bucket string, objectKey stri
 		Key:    aws.String(objectKey),
 	}, 2*time.Minute)
 	if err != nil {
-		logger.Instance.Errorw("Failed to wait for file to exist.", "objectKey", objectKey)
+		err = fmt.Errorf("Wait for file exists failed. bucket=%s, objectKey=%s, filePath=%s. %w", bucket, objectKey, filePath, err)
 	}
 	return err
 }
@@ -115,10 +111,28 @@ func (s *Client) UploadLargeObject(ctx context.Context, bucket string, objectKey
 		Body:   largeBuffer,
 	})
 	if err != nil {
-		logger.Instance.Errorw("Failed to upload large object.",
-			"objectKey", objectKey,
-			"error", err,
-		)
+		err = fmt.Errorf("Large object upload failed. bucket=%s, objectKey=%s. %w", bucket, objectKey, err)
+
 	}
 	return err
+}
+
+func (s *Client) GetObjectAsBytes(ctx context.Context, bucket string, objectKey string) ([]byte, error) {
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(objectKey),
+	}
+	result, err := s.client.GetObject(ctx, input)
+	if err != nil {
+		var noKey *types.NoSuchKey
+		if errors.As(err, &noKey) {
+			err = fmt.Errorf("Can't get object from bucket. No such key exists. bucket=%s, objectKey=%s.", bucket, objectKey)
+		} else {
+			err = fmt.Errorf("Can't get object from bucket. bucket=%s, objectKey=%s. %w", bucket, objectKey, err)
+		}
+		return nil, err
+	}
+	defer result.Body.Close()
+	body, err := io.ReadAll(result.Body)
+	return body, err
 }
