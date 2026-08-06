@@ -9,8 +9,6 @@ import (
 	"os"
 	"time"
 
-	logger "ieltsbeyond/internal/logging"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	awscredentials "github.com/aws/aws-sdk-go-v2/credentials"

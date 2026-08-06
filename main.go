@@ -8,6 +8,9 @@ import (
 	"ieltsbeyond/internal/middleware"
 	"ieltsbeyond/internal/repository/mongodb"
 	"ieltsbeyond/internal/repository/postgres"
+	"ieltsbeyond/internal/service"
+	"ieltsbeyond/internal/storage"
+	"ieltsbeyond/internal/writing/prompt"
 	"log"
 	"net/http"
 	"os"
@@ -39,14 +42,27 @@ func main() {
 
 	writingTaskRepo := postgres.NewWritingTaskRepository(db)
 	submissionRepo := mongodb.NewSubmissionRepository()
-	writingTaskHandler := handler.NewWritingTaskHandler(*writingTaskRepo, submissionRepo)
 
 	llmTimeout, _ := strconv.Atoi(os.Getenv("LLM_TIMEOUT"))
-	llmService := llm.NewOpenRouterProvider(
+	openRouterProvider := llm.NewOpenRouterProvider(
 		os.Getenv("LLM_URL"),
 		os.Getenv("LLM_API_KEY"),
 		os.Getenv("LLM_MODEL"),
 		llmTimeout,
+	)
+	objectStorage, _ := storage.NewClient()
+
+	writingAssessService := service.NewWritingAssessmentService(
+		writingTaskRepo,
+		objectStorage,
+		openRouterProvider,
+		prompt.AssessTask1System,
+	)
+
+	writingTaskHandler := handler.NewWritingTaskHandler(*writingTaskRepo,
+		submissionRepo,
+		writingAssessService,
+		objectStorage,
 	)
 
 	r := chi.NewRouter()
@@ -63,8 +79,10 @@ func main() {
 		r.Get("/writing/task1", writingTaskHandler.HandlerGetAllTask1)
 		r.Get("/writing/task2", writingTaskHandler.HandlerGetAllTask2)
 		r.Get("/writing/task1/{id}", writingTaskHandler.HandlerGetTask1)
+		r.Get("/writing/task1/{id}/assess", writingTaskHandler.HandlerAssessTask1)
 
 		r.With(middleware.Auth).Post("/writing/task1/{id}/submit", writingTaskHandler.HandlerSubmitTask1)
+
 	})
 
 	// Static content assets (cover images, etc.)

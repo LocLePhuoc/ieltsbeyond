@@ -3,10 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"ieltsbeyond/internal/llm"
+	logger "ieltsbeyond/internal/logging"
 	"ieltsbeyond/internal/middleware"
 	"ieltsbeyond/internal/repository/mongodb"
 	"ieltsbeyond/internal/repository/postgres"
+	"ieltsbeyond/internal/service"
 	"ieltsbeyond/internal/storage"
 	"ieltsbeyond/internal/utils"
 	"ieltsbeyond/internal/writing"
@@ -26,11 +27,21 @@ const task1SubmissionCollection = "writing_task1"
 type WritingTaskHandler struct {
 	db             postgres.WritingTaskRepository
 	submissionRepo *mongodb.SubmissionRepository
-	llmService     *llm.Provider
+	assessService  *service.WritingAssessService
+	objectStorage  *storage.Client
 }
 
-func NewWritingTaskHandler(db postgres.WritingTaskRepository, submissionRepo *mongodb.SubmissionRepository, llmService *llm.Provider) *WritingTaskHandler {
-	return &WritingTaskHandler{db: db, submissionRepo: submissionRepo, llmService: llmService}
+func NewWritingTaskHandler(db postgres.WritingTaskRepository,
+	submissionRepo *mongodb.SubmissionRepository,
+	assessService *service.WritingAssessService,
+	storage *storage.Client) *WritingTaskHandler {
+
+	return &WritingTaskHandler{
+		db:             db,
+		submissionRepo: submissionRepo,
+		assessService:  assessService,
+		objectStorage:  storage,
+	}
 }
 
 const defaultTaskLimit = 20
@@ -84,7 +95,7 @@ func (wh *WritingTaskHandler) HandlerGetTask1(w http.ResponseWriter, r *http.Req
 	}
 	if parts := strings.SplitN(task.ImageKey, "/", 2); len(parts) == 2 {
 		bucket, key := parts[0], parts[1]
-		signedURL, err := storage.Instance.GetObjectURL(r.Context(), bucket, key)
+		signedURL, err := wh.objectStorage.GetObjectURL(r.Context(), bucket, key)
 		if err != nil {
 			log.Printf("Cannot get presigned URL: %v", err)
 		} else {
@@ -149,9 +160,30 @@ func (wh *WritingTaskHandler) HandlerSubmitTask1(w http.ResponseWriter, r *http.
 
 	saved, err := wh.submissionRepo.UpsertWritingSubmission(r.Context(), task1SubmissionCollection, submission)
 	if err != nil {
-		log.Printf("Error saving submission: %v", err)
+		logger.Instance.Errorw("Error saving submission.", "error", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to save submission")
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, saved)
+}
+
+func (wh *WritingTaskHandler) HandlerAssessTask1(w http.ResponseWriter, r *http.Request) {
+	submissionId := r.URL.Query().Get("submission_id")
+	if submissionId == "" {
+		utils.WriteError(w, http.StatusUnauthorized, "invalid submission id")
+		return
+	}
+	submission, err := wh.submissionRepo.GetSubmission(r.Context(), task1SubmissionCollection, submissionId)
+	if err != nil {
+		logger.Instance.Errorw("Error getting submission.", "error", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to get submission")
+		return
+	}
+	assessment, err := wh.assessService.AssessTask1(r.Context(), submission)
+	if err != nil {
+		logger.Instance.Errorw("Failed to assess task1.", "error", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to assess task1")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, assessment)
 }

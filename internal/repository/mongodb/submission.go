@@ -41,3 +41,13 @@ func (s *SubmissionRepository) UpsertWritingSubmission(ctx context.Context, coll
 	}
 	return submission, nil
 }
+
+func (s *SubmissionRepository) GetSubmission(ctx context.Context, collectionName string, submissionId string) (writing.Submission, error) {
+	collection := s.database.Collection(collectionName)
+
+	var submission writing.Submission
+	if err := collection.FindOne(ctx, bson.M{"_id": submissionId}).Decode(&submission); err != nil {
+		return writing.Submission{}, err
+	}
+	return submission, nil
+}

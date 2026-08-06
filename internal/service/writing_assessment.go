@@ -19,8 +19,8 @@ type WritingAssessService struct {
 	systemPrompt string
 }
 
-func (s *WritingAssessService) NewWritingAssessmentService(taskRepo writing.TaskRepository, provider llm.Provider, storage *storage.Client) *WritingAssessService {
-	return &WritingAssessService{taskRepo: taskRepo, provider: provider, storage: storage}
+func NewWritingAssessmentService(taskRepo writing.TaskRepository, storage *storage.Client, provider llm.Provider, systemPrompt string) *WritingAssessService {
+	return &WritingAssessService{taskRepo: taskRepo, storage: storage, provider: provider, systemPrompt: systemPrompt}
 }
 
 func (s *WritingAssessService) AssessTask1(ctx context.Context, submission writing.Submission) (*writing.Assessment, error) {
