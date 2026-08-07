@@ -60,5 +60,7 @@ func (s *WritingAssessService) AssessTask1(ctx context.Context, submission writi
 	if err := json.Unmarshal([]byte(jsonText), &result); err != nil {
 		return nil, fmt.Errorf("JSON Parse failed: %w ---- model returned ---\n%s", err, jsonText)
 	}
+	result.TaskId = submission.TaskId
+	result.SubmissionId = submission.Id
 	return &result, nil
 }

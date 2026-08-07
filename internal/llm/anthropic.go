@@ -14,6 +14,7 @@ import (
 
 type AnthropicCompatProvider struct {
 	APIKey     string
+	BaseURL    string
 	Model      string
 	HTTPClient *http.Client
 	Timeout    int
@@ -59,7 +60,7 @@ func (p *AnthropicCompatProvider) Complete(ctx context.Context, systemPrompt str
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(p.Timeout)*time.Millisecond)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.anthropic.com/v1/messages", bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.BaseURL, bytes.NewReader(payload))
 	if err != nil {
 		return "", err
 	}

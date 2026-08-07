@@ -46,9 +46,11 @@ func (p *OpenAICompatProvider) Complete(ctx context.Context, systemPrompt string
 	}
 
 	reqBody := map[string]interface{}{
-		"model":       p.Model,
-		"max_tokens":  2000,
-		"temperature": 0.2,
+		"model":              p.Model,
+		"max_tokens":         4000,
+		"temperature":        0.2,
+		"repetition_penalty": 1.2,
+		"response_format":    map[string]string{"type": "json_object"},
 		"messages": []msg{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userContent},
@@ -60,7 +62,7 @@ func (p *OpenAICompatProvider) Complete(ctx context.Context, systemPrompt string
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(p.Timeout)*time.Millisecond)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.BaseURL+"/chat/completions", bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.BaseURL, bytes.NewReader(payload))
 	if err != nil {
 		return "", err
 	}

@@ -24,8 +24,8 @@ type errorCorrection struct {
 }
 
 type Assessment struct {
-	TaskId       string
-	SubmissionId string
+	TaskId       string `json:"task_id"`
+	SubmissionId string `json:"submission_id"`
 	Criteria     struct {
 		TaskAchievement          criterion `json:"task_achievement"`
 		CoherenceAndCohesion     criterion `json:"coherence_and_cohesion"`
