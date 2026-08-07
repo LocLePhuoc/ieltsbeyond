@@ -10,6 +10,9 @@ import (
 	"ieltsbeyond/internal/writing"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type WritingAssessService struct {
@@ -60,7 +63,9 @@ func (s *WritingAssessService) AssessTask1(ctx context.Context, submission writi
 	if err := json.Unmarshal([]byte(jsonText), &result); err != nil {
 		return nil, fmt.Errorf("JSON Parse failed: %w ---- model returned ---\n%s", err, jsonText)
 	}
+	result.Id = uuid.New().String()
 	result.TaskId = submission.TaskId
 	result.SubmissionId = submission.Id
+	result.CreatedAt = time.Now().UTC()
 	return &result, nil
 }

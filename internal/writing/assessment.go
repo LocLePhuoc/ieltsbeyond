@@ -1,5 +1,7 @@
 package writing
 
+import "time"
+
 type AssessmentCriteria string
 
 const (
@@ -24,8 +26,10 @@ type errorCorrection struct {
 }
 
 type Assessment struct {
-	TaskId       string `json:"task_id"`
-	SubmissionId string `json:"submission_id"`
+	Id           string    `json:"id" bson:"_id"`
+	TaskId       string    `json:"task_id" bson:"taskId"`
+	SubmissionId string    `json:"submission_id" bson:"submissionId"`
+	CreatedAt    time.Time `json:"created_at" bson:"createdAt"`
 	Criteria     struct {
 		TaskAchievement          criterion `json:"task_achievement"`
 		CoherenceAndCohesion     criterion `json:"coherence_and_cohesion"`

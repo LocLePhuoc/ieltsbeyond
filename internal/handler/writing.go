@@ -23,22 +23,26 @@ import (
 
 // TODO: fill in the Mongo collection name used for Task 1 submissions
 const task1SubmissionCollection = "writing_task1"
+const task1AssessmentCollection = "writing_task1_assessments"
 
 type WritingTaskHandler struct {
 	db             postgres.WritingTaskRepository
 	submissionRepo *mongodb.SubmissionRepository
+	assessmentRepo *mongodb.AssessmentRepository
 	assessService  *service.WritingAssessService
 	objectStorage  *storage.Client
 }
 
 func NewWritingTaskHandler(db postgres.WritingTaskRepository,
 	submissionRepo *mongodb.SubmissionRepository,
+	assessmentRepo *mongodb.AssessmentRepository,
 	assessService *service.WritingAssessService,
 	storage *storage.Client) *WritingTaskHandler {
 
 	return &WritingTaskHandler{
 		db:             db,
 		submissionRepo: submissionRepo,
+		assessmentRepo: assessmentRepo,
 		assessService:  assessService,
 		objectStorage:  storage,
 	}
@@ -179,11 +183,16 @@ func (wh *WritingTaskHandler) HandlerAssessTask1(w http.ResponseWriter, r *http.
 		utils.WriteError(w, http.StatusInternalServerError, "failed to get submission")
 		return
 	}
-	assessment, err := wh.assessService.AssessTask1(r.Context(), submission)
+	assessment, err := wh.assessService.AssessTask1(r.Context(), *submission)
 	if err != nil {
 		logger.Instance.Errorw("Failed to assess task1.", "error", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to assess task1")
 		return
 	}
+
+	if _, err := wh.assessmentRepo.UpsertWritingAssessment(r.Context(), task1AssessmentCollection, *assessment); err != nil {
+		logger.Instance.Errorw("Error saving assessment.", "error", err)
+	}
+
 	utils.WriteJSON(w, http.StatusOK, assessment)
 }

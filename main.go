@@ -42,6 +42,7 @@ func main() {
 
 	writingTaskRepo := postgres.NewWritingTaskRepository(db)
 	submissionRepo := mongodb.NewSubmissionRepository()
+	assessmentRepo := mongodb.NewAssessmentRepository()
 
 	llmTimeout, _ := strconv.Atoi(os.Getenv("LLM_TIMEOUT"))
 	openRouterProvider := llm.NewOpenRouterProvider(
@@ -61,6 +62,7 @@ func main() {
 
 	writingTaskHandler := handler.NewWritingTaskHandler(*writingTaskRepo,
 		submissionRepo,
+		assessmentRepo,
 		writingAssessService,
 		objectStorage,
 	)

@@ -14,13 +14,11 @@ type TaskRepository interface {
 }
 
 type SubmissionRepository interface {
-	GetAllSubmissions(ctx context.Context, cursor int, limit int) ([]Submission, error)
-	GetSubmission(ctx context.Context, submissionId string) (Submission, error)
-	Upsert(ctx context.Context, submission Submission) (Submission, error)
+	GetSubmission(ctx context.Context, collectionName string, submissionId string) (*Submission, error)
+	UpsertWritingSubmission(ctx context.Context, collectionName string, submission Submission) (*Submission, error)
 }
 
 type AssessmentRepository interface {
-	GetAllAssessments(ctx context.Context, cursor int, limit int) ([]Assessment, error)
-	GetAssessment(ctx context.Context, assessmentId string) (Assessment, error)
-	Upsert(ctx context.Context, assessment Assessment) (Assessment, error)
+	GetAssessment(ctx context.Context, collectionName string, assessmentId string) (*Assessment, error)
+	UpsertWritingAssessment(ctx context.Context, collectionName string, assessment Assessment) (*Assessment, error)
 }
