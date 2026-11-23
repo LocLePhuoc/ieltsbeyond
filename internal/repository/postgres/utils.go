@@ -17,3 +17,7 @@ func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	}
 	return pool, nil
 }
+
+type rowScanner interface {
+	Scan(dest ...any) error
+}

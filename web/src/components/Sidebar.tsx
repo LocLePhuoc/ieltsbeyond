@@ -27,7 +27,7 @@ export function SidebarInner({ activeTab }: { activeTab: string }) {
           </div>
           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-sage-400 rounded-full border-2 border-white" />
         </div>
-        <span className="font-sans text-sm font-bold text-charcoal tracking-tight">My Blog</span>
+        <span className="font-sans text-sm font-bold text-charcoal tracking-tight">IELTS Beyond</span>
         <span className="text-[11px] text-charcoal-light/60 mt-0.5 tracking-wide">THOUGHTS & STORIES</span>
       </div>
 
@@ -80,7 +80,7 @@ export function SidebarInner({ activeTab }: { activeTab: string }) {
       <div className="mt-auto pt-4 relative z-10">
         <div className="flex items-center justify-center gap-3 text-charcoal-light/30">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-          <span className="text-[10px] font-medium tracking-widest uppercase">Blog</span>
+          <span className="text-[10px] font-medium tracking-widest uppercase">IELTS</span>
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
         </div>
       </div>

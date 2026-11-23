@@ -26,7 +26,7 @@ const webDist = "web/dist"
 func main() {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		log.Fatal("DATABASE_URL is required. Copy .env.example, start Postgres, and run migrations/import.")
+		log.Fatal("DATABASE_URL is required. Copy .env.example, start Postgres, and run migrations.")
 	}
 
 	ctx := context.Background()
@@ -35,10 +35,6 @@ func main() {
 		logger.Instance.Fatalf("Failed to connect to Postgres: %v", err)
 	}
 	defer db.Close()
-
-	store := postgres.NewPostRepository(db)
-	publicHandler := handler.NewPublicHandler(store)
-	adminHandler := handler.NewAdminHandler(store, os.Getenv("ADMIN_TOKEN"))
 
 	writingTaskRepo := postgres.NewWritingTaskRepository(db)
 	submissionRepo := mongodb.NewSubmissionRepository()
@@ -74,10 +70,6 @@ func main() {
 
 	// JSON API
 	r.Route("/api", func(r chi.Router) {
-		r.Get("/categories", publicHandler.HandleCategories)
-		r.Get("/posts", publicHandler.HandlePosts)
-		r.Get("/posts/{slug}", publicHandler.HandlePostBySlug)
-		r.Route("/admin", adminHandler.Routes)
 		r.Get("/writing/task1", writingTaskHandler.HandlerGetAllTask1)
 		r.Get("/writing/task2", writingTaskHandler.HandlerGetAllTask2)
 		r.Get("/writing/task1/{id}", writingTaskHandler.HandlerGetTask1)
@@ -86,10 +78,6 @@ func main() {
 		r.With(middleware.Auth).Post("/writing/task1/{id}/submit", writingTaskHandler.HandlerSubmitTask1)
 
 	})
-
-	// Static content assets (cover images, etc.)
-	staticServer := http.FileServer(http.Dir("static"))
-	r.Handle("/static/*", http.StripPrefix("/static/", staticServer))
 
 	// React SPA
 	r.Get("/*", spaHandler(webDist))

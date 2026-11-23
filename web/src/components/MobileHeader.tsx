@@ -15,7 +15,7 @@ export default function MobileHeader({ activeTab }: { activeTab: string }) {
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-navy-400 to-sage flex items-center justify-center text-white text-[11px] font-serif font-bold">
               B
             </div>
-            <span className="font-sans text-sm font-bold text-charcoal">My Blog</span>
+            <span className="font-sans text-sm font-bold text-charcoal">IELTS Beyond</span>
           </Link>
           <button
             type="button"

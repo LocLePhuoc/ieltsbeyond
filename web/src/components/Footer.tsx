@@ -3,7 +3,7 @@ export default function Footer() {
   return (
     <footer className="mt-14 pt-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] text-charcoal-light/30 tracking-wide">
-        <p>&copy; {year} My Blog</p>
+        <p>&copy; {year} IELTS Beyond</p>
         <div className="flex items-center gap-4">
           <a href="#" className="hover:text-charcoal-light/60 transition-colors duration-200">
             GitHub

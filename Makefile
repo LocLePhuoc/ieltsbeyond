@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: setup web build run dev-api dev-web migrate-up migrate-down import-markdown dev clean
+.PHONY: setup web build run dev-api dev-web migrate-up migrate-down dev clean
 
 # Install dependencies
 setup:
@@ -36,13 +36,9 @@ migrate-up:
 migrate-down:
 	go run ./cmd/migrate -direction down
 
-# Import existing markdown content into Postgres
-import-markdown:
-	go run ./cmd/import-markdown
-
-# Migrate, import content, and run API against DATABASE_URL
+# Migrate and run API against DATABASE_URL
 # Run `make dev-web` separately for the Vite frontend.
-dev: migrate-up import-markdown dev-api
+dev: migrate-up dev-api
 
 # Clean build artifacts
 clean:

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
 export default function NotFoundPage() {
-  useDocumentTitle("Not Found - My Blog");
+  useDocumentTitle("Not Found - IELTS Beyond");
 
   return (
     <div className="flex flex-col items-center justify-center py-24 bg-white/60 backdrop-blur-sm rounded-3xl border border-white/60">

@@ -5,12 +5,11 @@ import Sidebar from "./Sidebar";
 import Footer from "./Footer";
 import { ActiveTabContext } from "./ActiveTabContext";
 
-const CATEGORY_TABS = ["tech", "gaming", "travelling", "writing"];
+const TABS = ["writing"];
 
 function deriveTabFromPath(pathname: string): string {
-  if (pathname === "/") return "home";
   const segment = pathname.split("/")[1];
-  return CATEGORY_TABS.includes(segment) ? segment : "";
+  return TABS.includes(segment) ? segment : "";
 }
 
 export default function Layout() {
@@ -19,10 +18,7 @@ export default function Layout() {
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
-    // Post detail pages set their own active tab once the post's category loads.
-    if (!location.pathname.startsWith("/posts/")) {
-      setActiveTab(deriveTabFromPath(location.pathname));
-    }
+    setActiveTab(deriveTabFromPath(location.pathname));
   }, [location.pathname]);
 
   return (
