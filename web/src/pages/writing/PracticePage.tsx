@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { submitWritingTask1 } from "../../lib/api";
+import { assessWritingTask1, submitWritingTask1, type Assessment } from "../../lib/api";
+import AssessmentPanel from "./AssessmentPanel";
 
 interface PracticeTask {
   id?: string;
@@ -24,26 +25,41 @@ export default function PracticePage() {
   const [imageFailed, setImageFailed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [assessing, setAssessing] = useState(false);
+  const [assessError, setAssessError] = useState<string | null>(null);
+  const [assessment, setAssessment] = useState<Assessment | null>(null);
+
+  const isTask1 = task.type === "Task 1";
 
   useEffect(() => setImageFailed(false), [task.imageKey]);
 
   async function handleCheckAnswer() {
-    if (task.type !== "Task 1" || !task.id) return;
+    if (!isTask1 || !task.id) return;
 
     setSubmitting(true);
     setSubmitError(null);
+    setAssessError(null);
+    setAssessment(null);
     try {
-      await submitWritingTask1(task.id, answer);
-      setSubmitted(true);
+      const submission = await submitWritingTask1(task.id, answer);
+      setSubmitting(false);
+
+      setAssessing(true);
+      try {
+        const result = await assessWritingTask1(task.id, submission.id);
+        setAssessment(result);
+      } catch {
+        setAssessError("Failed to assess your answer. Please try again.");
+      } finally {
+        setAssessing(false);
+      }
     } catch {
       setSubmitError("Failed to submit your answer. Please try again.");
-    } finally {
       setSubmitting(false);
     }
   }
 
-  return (
+  const editor = (
     <div className="flex flex-col gap-5">
       <section className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-glass border border-white/60 p-6 md:p-8">
         <div className="flex items-center gap-2 mb-3">
@@ -87,16 +103,30 @@ export default function PracticePage() {
 
       <div className="flex items-center justify-end gap-3">
         {submitError && <span className="text-sm text-red-500">{submitError}</span>}
-        {submitted && !submitError && <span className="text-sm text-sage">Submitted!</span>}
         <button
           type="button"
           onClick={handleCheckAnswer}
-          disabled={submitting}
+          disabled={submitting || assessing}
           className="px-6 py-3 rounded-xl bg-sage text-white text-sm font-semibold shadow-soft-lg hover:bg-sage-dark transition-colors disabled:opacity-60 disabled:cursor-wait"
         >
-          {submitting ? "Submitting..." : "Check Answer"}
+          {submitting ? "Submitting..." : assessing ? "Assessing..." : "Check Answer"}
         </button>
       </div>
+    </div>
+  );
+
+  if (!isTask1) {
+    return editor;
+  }
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-5">
+      <div className="flex-1 min-w-0">{editor}</div>
+      <aside className="w-full lg:w-[360px] lg:shrink-0">
+        <div className="lg:sticky lg:top-6">
+          <AssessmentPanel assessing={assessing} assessError={assessError} assessment={assessment} />
+        </div>
+      </aside>
     </div>
   );
 }

@@ -21,7 +21,7 @@ func NewWritingTaskRepository(db *pgxpool.Pool) *WritingTaskRepository {
 
 func (s *WritingTaskRepository) GetAllTasks1(ctx context.Context, cursor int, limit int) ([]writing.Task1, error) {
 	rows, err := s.db.Query(ctx, `
-		SELECT id, question, type, image_path FROM writing_tasks1
+		SELECT id, question, type, image_key FROM writing_tasks1
 		ORDER BY id ASC
 		LIMIT $1 OFFSET $2
 	`, limit, cursor)
@@ -70,7 +70,7 @@ func (s *WritingTaskRepository) GetAllTasks2(ctx context.Context, cursor int, li
 }
 
 func (s *WritingTaskRepository) GetTask1(ctx context.Context, taskId string) (writing.Task1, error) {
-	row := s.db.QueryRow(ctx, `SELECT id, question, type, image_path FROM writing_tasks1 WHERE id = $1`, taskId)
+	row := s.db.QueryRow(ctx, `SELECT id, question, type, image_key FROM writing_tasks1 WHERE id = $1`, taskId)
 	return scanTask1(row)
 }
 
@@ -86,8 +86,8 @@ func (s *WritingTaskRepository) UpsertTask1(ctx context.Context, task writing.Ta
 	row := s.db.QueryRow(ctx, `
 		INSERT INTO writing_tasks1 (id, question, type, image_key)
 		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (id) DO UPDATE SET question = $2, type = $3, image_path = $4, updated_at = now()
-		RETURNING id, question, type, image_path
+		ON CONFLICT (id) DO UPDATE SET question = $2, type = $3, image_key = $4, updated_at = now()
+		RETURNING id, question, type, image_key
 	`, task.Id, task.Question, task.Type, task.ImageKey)
 	return scanTask1(row)
 }

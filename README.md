@@ -132,8 +132,8 @@ cp .env.example .env
 Default local values assume a Postgres instance already running on `localhost:5432` with a matching database/user/password:
 
 ```env
-DATABASE_URL=postgres://ieltsbeyond:ieltsbeyond@localhost:5432/ieltsbeyond?sslmode=disable
-ADMIN_TOKEN=local-dev-token
+DATABASE_URL=
+ADMIN_TOKEN=
 PORT=3000
 ```
 

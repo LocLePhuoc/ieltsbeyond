@@ -3,14 +3,19 @@ package main
 import (
 	"context"
 	"ieltsbeyond/internal/handler"
+	"ieltsbeyond/internal/llm"
 	logger "ieltsbeyond/internal/logging"
 	"ieltsbeyond/internal/middleware"
-	"ieltsbeyond/internal/mongodb"
-	"ieltsbeyond/internal/postgres"
+	"ieltsbeyond/internal/repository/mongodb"
+	"ieltsbeyond/internal/repository/postgres"
+	"ieltsbeyond/internal/service"
+	"ieltsbeyond/internal/storage"
+	"ieltsbeyond/internal/writing/prompt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -37,7 +42,30 @@ func main() {
 
 	writingTaskRepo := postgres.NewWritingTaskRepository(db)
 	submissionRepo := mongodb.NewSubmissionRepository()
-	writingTaskHandler := handler.NewWritingTaskHandler(*writingTaskRepo, submissionRepo)
+	assessmentRepo := mongodb.NewAssessmentRepository()
+
+	llmTimeout, _ := strconv.Atoi(os.Getenv("LLM_TIMEOUT"))
+	openRouterProvider := llm.NewOpenRouterProvider(
+		os.Getenv("LLM_URL"),
+		os.Getenv("LLM_API_KEY"),
+		os.Getenv("LLM_MODEL"),
+		llmTimeout,
+	)
+	objectStorage, _ := storage.NewClient()
+
+	writingAssessService := service.NewWritingAssessmentService(
+		writingTaskRepo,
+		objectStorage,
+		openRouterProvider,
+		prompt.AssessTask1System,
+	)
+
+	writingTaskHandler := handler.NewWritingTaskHandler(*writingTaskRepo,
+		submissionRepo,
+		assessmentRepo,
+		writingAssessService,
+		objectStorage,
+	)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -53,8 +81,10 @@ func main() {
 		r.Get("/writing/task1", writingTaskHandler.HandlerGetAllTask1)
 		r.Get("/writing/task2", writingTaskHandler.HandlerGetAllTask2)
 		r.Get("/writing/task1/{id}", writingTaskHandler.HandlerGetTask1)
+		r.Get("/writing/task1/{id}/assess", writingTaskHandler.HandlerAssessTask1)
 
 		r.With(middleware.Auth).Post("/writing/task1/{id}/submit", writingTaskHandler.HandlerSubmitTask1)
+
 	})
 
 	// Static content assets (cover images, etc.)

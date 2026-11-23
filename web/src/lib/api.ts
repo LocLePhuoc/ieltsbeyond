@@ -94,3 +94,41 @@ export function submitWritingTask1(taskId: string, answer: string): Promise<Writ
     answer,
   });
 }
+
+export interface AssessmentCriterion {
+  band: number;
+  strengths: string[];
+  weaknesses: string[];
+  comment: string;
+}
+
+export interface AssessmentErrorCorrection {
+  original: string;
+  correction: string;
+  type: string;
+  explanation: string;
+}
+
+export interface Assessment {
+  task_id: string;
+  submission_id: string;
+  criteria: {
+    task_achievement: AssessmentCriterion;
+    coherence_and_cohesion: AssessmentCriterion;
+    lexical_resource: AssessmentCriterion;
+    grammatical_range_accuracy: AssessmentCriterion;
+  };
+  data_accuracy_check: {
+    correct_points: string[];
+    incorrect_points: string[];
+  };
+  error_corrections: AssessmentErrorCorrection[];
+  overview_feedback: string;
+  top_priorities_to_improve: string[];
+}
+
+export function assessWritingTask1(taskId: string, submissionId: string): Promise<Assessment> {
+  return getJSON<Assessment>(
+    `/writing/task1/${encodeURIComponent(taskId)}/assess?submission_id=${encodeURIComponent(submissionId)}`,
+  );
+}

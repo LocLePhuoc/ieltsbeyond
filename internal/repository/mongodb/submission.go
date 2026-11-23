@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var _ writing.SubmissionRepository = (*SubmissionRepository)(nil)
+
 type SubmissionRepository struct {
 	client   *mongo.Client
 	database *mongo.Database
@@ -29,7 +31,7 @@ func NewSubmissionRepository() *SubmissionRepository {
 	return &SubmissionRepository{client: client, database: database}
 }
 
-func (s *SubmissionRepository) UpsertWritingSubmission(ctx context.Context, collectionName string, submission writing.Submission) (writing.Submission, error) {
+func (s *SubmissionRepository) UpsertWritingSubmission(ctx context.Context, collectionName string, submission writing.Submission) (*writing.Submission, error) {
 	collection := s.database.Collection(collectionName) // TODO: fill in collection name
 
 	filter := bson.M{"_id": submission.Id}
@@ -37,7 +39,17 @@ func (s *SubmissionRepository) UpsertWritingSubmission(ctx context.Context, coll
 
 	_, err := collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	if err != nil {
-		return writing.Submission{}, err
+		return nil, err
 	}
-	return submission, nil
+	return &submission, nil
+}
+
+func (s *SubmissionRepository) GetSubmission(ctx context.Context, collectionName string, submissionId string) (*writing.Submission, error) {
+	collection := s.database.Collection(collectionName)
+
+	var submission writing.Submission
+	if err := collection.FindOne(ctx, bson.M{"_id": submissionId}).Decode(&submission); err != nil {
+		return nil, err
+	}
+	return &submission, nil
 }
