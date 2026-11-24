@@ -31,3 +31,10 @@ func ExtractLLMJSON(s string) string {
 	}
 	return s
 }
+
+func decodeJSON(data []byte, dst any) error {
+	if len(data) == 0 {
+		return nil
+	}
+	return json.Unmarshal(data, dst)
+}
